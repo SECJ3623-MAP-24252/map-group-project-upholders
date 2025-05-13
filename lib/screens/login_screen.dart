@@ -5,11 +5,13 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/session_viewmodel.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  LoginScreenState createState() => LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -65,25 +67,32 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               SizedBox(height: 16),
               ElevatedButton(
-                onPressed: authViewModel.isLoading
-                    ? null
-                    : () async {
-                        if (_formKey.currentState!.validate()) {
-                          final success = await authViewModel.signIn(
-                            _emailController.text,
-                            _passwordController.text,
-                          );
-                          
-                          if (success && authViewModel.currentUser != null) {
-                            // Create session
-                            await sessionViewModel.createSession(authViewModel.currentUser!.id);
-                            Navigator.pushReplacementNamed(context, '/dashboard');
+                onPressed:
+                    authViewModel.isLoading
+                        ? null
+                        : () async {
+                          if (_formKey.currentState!.validate()) {
+                            final success = await authViewModel.signIn(
+                              _emailController.text,
+                              _passwordController.text,
+                            );
+
+                            if (success && authViewModel.currentUser != null) {
+                              // Create session
+                              await sessionViewModel.createSession(
+                                authViewModel.currentUser!.id,
+                              );
+                              Navigator.pushReplacementNamed(
+                                context,
+                                '/dashboard',
+                              );
+                            }
                           }
-                        }
-                      },
-                child: authViewModel.isLoading
-                    ? CircularProgressIndicator(color: Colors.white)
-                    : Text('Login'),
+                        },
+                child:
+                    authViewModel.isLoading
+                        ? CircularProgressIndicator(color: Colors.white)
+                        : Text('Login'),
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 50),
                 ),

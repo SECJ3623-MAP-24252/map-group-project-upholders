@@ -4,13 +4,14 @@ import '../services/session_service.dart';
 
 class SessionViewModel extends ChangeNotifier {
   final SessionService _sessionService;
-  
+
   bool _isSessionActive = false;
   String? _userId;
 
   SessionViewModel(this._sessionService);
 
-  bool get isSessionActive => _isSessionActive;
+  bool get sessionStatus => _isSessionActive;
+
   String? get userId => _userId;
 
   // Check if session is active

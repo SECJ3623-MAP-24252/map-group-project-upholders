@@ -13,7 +13,7 @@ class SessionService {
   Future<void> createSession(String userId) async {
     final prefs = await SharedPreferences.getInstance();
     final expiryDate = DateTime.now().add(Duration(days: SESSION_DURATION));
-    
+
     await prefs.setBool(SESSION_KEY, true);
     await prefs.setString(USER_ID_KEY, userId);
     await prefs.setString(SESSION_EXPIRY_KEY, expiryDate.toIso8601String());
@@ -24,12 +24,12 @@ class SessionService {
     final prefs = await SharedPreferences.getInstance();
     final sessionActive = prefs.getBool(SESSION_KEY) ?? false;
     if (!sessionActive) return false;
-    
+
     final expiryDateStr = prefs.getString(SESSION_EXPIRY_KEY);
     if (expiryDateStr == null) return false;
-    
-    return DateTime.parse(expiryDateStr).isAfter(DateTime.now()) && 
-           _auth.currentUser != null;
+
+    return DateTime.parse(expiryDateStr).isAfter(DateTime.now()) &&
+        _auth.currentUser != null;
   }
 
   // Get session user ID

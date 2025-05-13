@@ -1,23 +1,27 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'lib/model/user_model.dart';
-import 'lib/screens/dashboard_screen.dart';
-import 'lib/screens/forgot_password_screen.dart';
-import 'lib/screens/login_screen.dart';
-import 'lib/services/auth_service.dart';
-import 'lib/services/session_service.dart';
-import 'lib/viewmodels/auth_viewmodel.dart';
-import 'lib/viewmodels/session_viewmodel.dart';
+// import './model/user_model.dart';
+import './screens/dashboard_screen.dart';
+import './screens/forgot_password_screen.dart';
+import './screens/login_screen.dart';
+import './services/auth_service.dart';
+import './services/session_service.dart';
+import './viewmodels/auth_viewmodel.dart';
+import './viewmodels/session_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -25,14 +29,22 @@ class MyApp extends StatelessWidget {
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<SessionService>(create: (_) => SessionService()),
         ChangeNotifierProxyProvider<AuthService, AuthViewModel>(
-          create: (context) => AuthViewModel(Provider.of<AuthService>(context, listen: false)),
-          update: (context, authService, previous) => 
-              previous ?? AuthViewModel(authService),
+          create:
+              (context) => AuthViewModel(
+                Provider.of<AuthService>(context, listen: false),
+              ),
+          update:
+              (context, authService, previous) =>
+                  previous ?? AuthViewModel(authService),
         ),
         ChangeNotifierProxyProvider<SessionService, SessionViewModel>(
-          create: (context) => SessionViewModel(Provider.of<SessionService>(context, listen: false)),
-          update: (context, sessionService, previous) => 
-              previous ?? SessionViewModel(sessionService),
+          create:
+              (context) => SessionViewModel(
+                Provider.of<SessionService>(context, listen: false),
+              ),
+          update:
+              (context, sessionService, previous) =>
+                  previous ?? SessionViewModel(sessionService),
         ),
       ],
       child: MaterialApp(
@@ -54,11 +66,13 @@ class MyApp extends StatelessWidget {
 }
 
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
-  _SplashScreenState createState() => _SplashScreenState();
+  SplashScreenState createState() => SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
@@ -66,12 +80,19 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void checkSession() async {
-    final sessionViewModel = Provider.of<SessionViewModel>(context, listen: false);
-    await Future.delayed(Duration(seconds: 2)); // Simulating loading time
-    
+    final sessionViewModel = Provider.of<SessionViewModel>(
+      context,
+      listen: false,
+    );
+    await Future.delayed(Duration(seconds: 2));
+
+    if (!mounted) return;
+
     if (await sessionViewModel.isSessionActive()) {
+      if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/dashboard');
     } else {
+      if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/login');
     }
   }

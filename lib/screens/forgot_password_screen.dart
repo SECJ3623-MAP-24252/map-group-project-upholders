@@ -4,11 +4,13 @@ import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
+
   @override
-  _ForgotPasswordScreenState createState() => _ForgotPasswordScreenState();
+  ForgotPasswordScreenState createState() => ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   bool _resetEmailSent = false;
@@ -29,18 +31,25 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.emailAddress,
-          validator: (value) => 
-              (value == null || value.isEmpty) ? 'Please enter your email' : null,
+          validator:
+              (value) =>
+                  (value == null || value.isEmpty)
+                      ? 'Please enter your email'
+                      : null,
         ),
         SizedBox(height: 16),
         if (authViewModel.errorMessage != null)
-          Text(authViewModel.errorMessage!, style: TextStyle(color: Colors.red)),
+          Text(
+            authViewModel.errorMessage!,
+            style: TextStyle(color: Colors.red),
+          ),
         SizedBox(height: 24),
         ElevatedButton(
           onPressed: authViewModel.isLoading ? null : _handleResetRequest,
-          child: authViewModel.isLoading
-              ? CircularProgressIndicator(color: Colors.white)
-              : Text('Send Reset Link'),
+          child:
+              authViewModel.isLoading
+                  ? CircularProgressIndicator(color: Colors.white)
+                  : Text('Send Reset Link'),
           style: ElevatedButton.styleFrom(
             minimumSize: Size(double.infinity, 50),
           ),
@@ -96,8 +105,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _resetEmailSent 
-                  ? _buildSuccessState() 
+              _resetEmailSent
+                  ? _buildSuccessState()
                   : _buildInitialState(authViewModel),
             ],
           ),
