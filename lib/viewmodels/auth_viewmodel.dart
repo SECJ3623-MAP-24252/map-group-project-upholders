@@ -24,20 +24,15 @@ class AuthViewModel extends ChangeNotifier {
 
     try {
       final user = await _authService.signInWithEmailPassword(email, password);
-      
-      if (user != null) {
-        _currentUser = user;
-        return true;
-      } else {
-        _errorMessage = "Invalid email or password";
-        return false;
-      }
-    } catch (e) {
-      _errorMessage = e.toString();
-      return false;
-    } finally {
+      _currentUser = user;
       _isLoading = false;
       notifyListeners();
+      return user != null;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 
@@ -46,19 +41,18 @@ class AuthViewModel extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-
+    
     try {
       final result = await _authService.resetPassword(email);
-      if (!result) {
-        _errorMessage = "Failed to send password reset email";
-      }
+      _isLoading = false;
+      if (!result) _errorMessage = "Failed to send password reset email";
+      notifyListeners();
       return result;
     } catch (e) {
       _errorMessage = e.toString();
-      return false;
-    } finally {
       _isLoading = false;
       notifyListeners();
+      return false;
     }
   }
 
@@ -66,10 +60,8 @@ class AuthViewModel extends ChangeNotifier {
   Future<void> signOut() async {
     _isLoading = true;
     notifyListeners();
-
     await _authService.signOut();
     _currentUser = null;
-    
     _isLoading = false;
     notifyListeners();
   }

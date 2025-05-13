@@ -16,9 +16,7 @@ class SessionViewModel extends ChangeNotifier {
   // Check if session is active
   Future<bool> isSessionActive() async {
     _isSessionActive = await _sessionService.isSessionActive();
-    if (_isSessionActive) {
-      _userId = await _sessionService.getSessionUserId();
-    }
+    if (_isSessionActive) _userId = await _sessionService.getSessionUserId();
     notifyListeners();
     return _isSessionActive;
   }

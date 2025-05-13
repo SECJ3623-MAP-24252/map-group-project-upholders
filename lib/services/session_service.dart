@@ -12,8 +12,6 @@ class SessionService {
   // Create session
   Future<void> createSession(String userId) async {
     final prefs = await SharedPreferences.getInstance();
-    
-    // Calculate session expiry date (7 days from now)
     final expiryDate = DateTime.now().add(Duration(days: SESSION_DURATION));
     
     await prefs.setBool(SESSION_KEY, true);
@@ -25,33 +23,27 @@ class SessionService {
   Future<bool> isSessionActive() async {
     final prefs = await SharedPreferences.getInstance();
     final sessionActive = prefs.getBool(SESSION_KEY) ?? false;
-    
     if (!sessionActive) return false;
     
-    // Check if session is expired
     final expiryDateStr = prefs.getString(SESSION_EXPIRY_KEY);
     if (expiryDateStr == null) return false;
     
-    final expiryDate = DateTime.parse(expiryDateStr);
-    final now = DateTime.now();
-    
-    // Also check if Firebase Auth still has the user
-    final currentUser = _auth.currentUser;
-    
-    return expiryDate.isAfter(now) && currentUser != null;
+    return DateTime.parse(expiryDateStr).isAfter(DateTime.now()) && 
+           _auth.currentUser != null;
   }
 
   // Get session user ID
   Future<String?> getSessionUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(USER_ID_KEY);
+    return (await SharedPreferences.getInstance()).getString(USER_ID_KEY);
   }
 
   // Clear session
   Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(SESSION_KEY);
-    await prefs.remove(USER_ID_KEY);
-    await prefs.remove(SESSION_EXPIRY_KEY);
+    await Future.wait([
+      prefs.remove(SESSION_KEY),
+      prefs.remove(USER_ID_KEY),
+      prefs.remove(SESSION_EXPIRY_KEY),
+    ]);
   }
 }
