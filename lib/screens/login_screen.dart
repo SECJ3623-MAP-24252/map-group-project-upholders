@@ -89,13 +89,13 @@ class LoginScreenState extends State<LoginScreen> {
                             }
                           }
                         },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 50),
+                ),
                 child:
                     authViewModel.isLoading
                         ? CircularProgressIndicator(color: Colors.white)
                         : Text('Login'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
-                ),
               ),
               SizedBox(height: 16),
               TextButton(

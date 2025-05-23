@@ -46,13 +46,13 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         SizedBox(height: 24),
         ElevatedButton(
           onPressed: authViewModel.isLoading ? null : _handleResetRequest,
+          style: ElevatedButton.styleFrom(
+            minimumSize: Size(double.infinity, 50),
+          ),
           child:
               authViewModel.isLoading
                   ? CircularProgressIndicator(color: Colors.white)
                   : Text('Send Reset Link'),
-          style: ElevatedButton.styleFrom(
-            minimumSize: Size(double.infinity, 50),
-          ),
         ),
       ],
     );
@@ -76,10 +76,10 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         SizedBox(height: 24),
         ElevatedButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Back to Login'),
           style: ElevatedButton.styleFrom(
             minimumSize: Size(double.infinity, 50),
           ),
+          child: Text('Back to Login'),
         ),
       ],
     );

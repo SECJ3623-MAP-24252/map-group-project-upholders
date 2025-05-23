@@ -5,6 +5,8 @@ import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/session_viewmodel.dart';
 
 class DashboardScreen extends StatelessWidget {
+  const DashboardScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context);
