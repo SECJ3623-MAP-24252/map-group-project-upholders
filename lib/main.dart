@@ -1,18 +1,15 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// import './model/user_model.dart';
-import './screens/forgot_password_screen.dart';
-import './screens/login_screen.dart';
 import './services/auth_service.dart';
 import './services/session_service.dart';
-import './viewmodels/auth_viewmodel.dart';
-import './viewmodels/session_viewmodel.dart';
-import './screens/dashboard_user_page.dart';
-import './screens/dashboard_psychiatrist_page.dart';
+import 'firebase_options.dart';
+// import './model/user_model.dart';
+import 'screens/auth/forgot_password_view.dart';
+import 'screens/auth/login_view.dart';
+import 'screens/dashboard/dashboard_psychiatrist_view.dart';
+import 'screens/dashboard/dashboard_user_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

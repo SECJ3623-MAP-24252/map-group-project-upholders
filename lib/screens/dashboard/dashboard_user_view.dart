@@ -3,8 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../model/mood_model.dart';
-import '../viewmodels/mood_viewmodel.dart';
+import '../../model/mood.dart';
+import '../../viewmodels/mood_viewmodel.dart';
 
 class DashboardUserPage extends StatelessWidget {
   const DashboardUserPage({super.key});
