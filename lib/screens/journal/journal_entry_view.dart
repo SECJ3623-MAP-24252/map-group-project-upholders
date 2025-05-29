@@ -1,5 +1,8 @@
 // lib/screens/journal/journal_entry_view.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'journal_entry_viewmodel.dart';
 
 class JournalEntryView extends StatefulWidget {
   @override
@@ -7,28 +10,23 @@ class JournalEntryView extends StatefulWidget {
 }
 
 class _JournalEntryViewState extends State<JournalEntryView> {
-  final _titleController = TextEditingController();
-  final _contentController = TextEditingController();
-  String _selectedMood = 'neutral';
-  bool _isEditing = false;
+  // ViewModel will be provided
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final entry = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    if (entry != null) {
-      _isEditing = true;
-      _titleController.text = entry['title'];
-      _contentController.text = entry['content'];
-      _selectedMood = entry['mood'];
-    }
+    // Initialize ViewModel here, only once
+    Provider.of<JournalEntryViewModel>(context, listen: false).initializeEntry(entry);
   }
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<JournalEntryViewModel>(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Entry' : 'New Entry'),
+        title: Text(viewModel.isEditing ? 'Edit Entry' : 'New Entry'),
         actions: [
           IconButton(
             icon: Icon(Icons.save),
@@ -42,7 +40,7 @@ class _JournalEntryViewState extends State<JournalEntryView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
-              controller: _titleController,
+              controller: viewModel.titleController,
               decoration: InputDecoration(
                 labelText: 'Title',
                 border: OutlineInputBorder(),
@@ -55,7 +53,7 @@ class _JournalEntryViewState extends State<JournalEntryView> {
             SizedBox(height: 16),
             Expanded(
               child: TextField(
-                controller: _contentController,
+                controller: viewModel.contentController,
                 decoration: InputDecoration(
                   labelText: 'Write your thoughts...',
                   border: OutlineInputBorder(),
@@ -70,8 +68,10 @@ class _JournalEntryViewState extends State<JournalEntryView> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _saveEntry,
-                child: Text(_isEditing ? 'Update Entry' : 'Save Entry'),
+                onPressed: viewModel.isLoading ? null : _saveEntry,
+                child: viewModel.isLoading
+                    ? CircularProgressIndicator(color: Colors.white)
+                    : Text(viewModel.isEditing ? 'Update Entry' : 'Save Entry'),
               ),
             ),
           ],
@@ -81,20 +81,21 @@ class _JournalEntryViewState extends State<JournalEntryView> {
   }
 
   Widget _buildMoodSelector() {
+    final viewModel = Provider.of<JournalEntryViewModel>(context, listen: false); // No need to rebuild for this
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildMoodOption('happy', Icons.sentiment_very_satisfied, Colors.green),
-        _buildMoodOption('neutral', Icons.sentiment_neutral, Colors.orange),
-        _buildMoodOption('sad', Icons.sentiment_very_dissatisfied, Colors.red),
+        _buildMoodOption(viewModel, 'happy', Icons.sentiment_very_satisfied, Colors.green),
+        _buildMoodOption(viewModel, 'neutral', Icons.sentiment_neutral, Colors.orange),
+        _buildMoodOption(viewModel, 'sad', Icons.sentiment_very_dissatisfied, Colors.red),
       ],
     );
   }
 
-  Widget _buildMoodOption(String mood, IconData icon, Color color) {
-    final isSelected = _selectedMood == mood;
+  Widget _buildMoodOption(JournalEntryViewModel viewModel, String mood, IconData icon, Color color) {
+    final isSelected = viewModel.selectedMood == mood;
     return GestureDetector(
-      onTap: () => setState(() => _selectedMood = mood),
+      onTap: () => viewModel.selectMood(mood),
       child: Container(
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -116,26 +117,18 @@ class _JournalEntryViewState extends State<JournalEntryView> {
     );
   }
 
-  void _saveEntry() {
-    if (_titleController.text.isEmpty || _contentController.text.isEmpty) {
+  void _saveEntry() async {
+    final viewModel = Provider.of<JournalEntryViewModel>(context, listen: false);
+    final success = await viewModel.saveEntry();
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Entry saved successfully!')),
+      );
+      Navigator.pop(context);
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please fill in all fields')),
       );
-      return;
     }
-
-    // Save logic here
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Entry saved successfully!')),
-    );
-    
-    Navigator.pop(context);
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _contentController.dispose();
-    super.dispose();
   }
 }

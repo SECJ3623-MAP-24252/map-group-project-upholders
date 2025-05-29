@@ -1,5 +1,8 @@
 // lib/screens/mood_tracking/mood_analytics_view.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'mood_analytics_viewmodel.dart';
 
 class MoodAnalyticsView extends StatefulWidget {
   @override
@@ -7,46 +10,51 @@ class MoodAnalyticsView extends StatefulWidget {
 }
 
 class _MoodAnalyticsViewState extends State<MoodAnalyticsView> {
-  String _selectedPeriod = 'Week';
+  // ViewModel will be provided
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<MoodAnalyticsViewModel>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Mood Analytics'),
         actions: [
           PopupMenuButton<String>(
-            initialValue: _selectedPeriod,
-            onSelected: (value) => setState(() => _selectedPeriod = value),
+            initialValue: viewModel.selectedPeriod,
+            onSelected: (value) => viewModel.selectPeriod(value),
             itemBuilder: (context) => [
               PopupMenuItem(value: 'Week', child: Text('This Week')),
               PopupMenuItem(value: 'Month', child: Text('This Month')),
               PopupMenuItem(value: 'Year', child: Text('This Year')),
             ],
+            tooltip: "Select Period",
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildPeriodSelector(),
-            SizedBox(height: 16),
-            _buildMoodDistribution(),
-            SizedBox(height: 16),
-            _buildMoodTrends(),
-            SizedBox(height: 16),
-            _buildTopTriggers(),
-            SizedBox(height: 16),
-            _buildInsights(),
-          ],
-        ),
-      ),
+      body: viewModel.isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPeriodSelector(viewModel.selectedPeriod),
+                  SizedBox(height: 16),
+                  _buildMoodDistribution(viewModel.moodDistribution),
+                  SizedBox(height: 16),
+                  _buildMoodTrends(viewModel.moodTrends),
+                  SizedBox(height: 16),
+                  _buildTopTriggers(viewModel.topTriggers),
+                  SizedBox(height: 16),
+                  _buildInsights(viewModel.insights),
+                ],
+              ),
+            ),
     );
   }
 
-  Widget _buildPeriodSelector() {
+  Widget _buildPeriodSelector(String selectedPeriod) {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16.0),
@@ -54,7 +62,7 @@ class _MoodAnalyticsViewState extends State<MoodAnalyticsView> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Viewing: $_selectedPeriod',
+              'Viewing: $selectedPeriod',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],
@@ -63,7 +71,7 @@ class _MoodAnalyticsViewState extends State<MoodAnalyticsView> {
     );
   }
 
-  Widget _buildMoodDistribution() {
+  Widget _buildMoodDistribution(Map<String, double> moodDistribution) {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16.0),
@@ -75,11 +83,9 @@ class _MoodAnalyticsViewState extends State<MoodAnalyticsView> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16),
-            _buildMoodBar('Happy', 0.6, Colors.green),
-            _buildMoodBar('Neutral', 0.3, Colors.orange),
-            _buildMoodBar('Sad', 0.1, Colors.red),
-            _buildMoodBar('Anxious', 0.2, Colors.purple),
-            _buildMoodBar('Excited', 0.4, Colors.blue),
+            if (moodDistribution.isEmpty) Text("No distribution data available."),
+            ...moodDistribution.entries.map((entry) =>
+                _buildMoodBar(entry.key, entry.value, _getColorForMood(entry.key))),
           ],
         ),
       ),
@@ -109,7 +115,22 @@ class _MoodAnalyticsViewState extends State<MoodAnalyticsView> {
     );
   }
 
-  Widget _buildMoodTrends() {
+  Color _getColorForMood(String mood) {
+    switch (mood.toLowerCase()) {
+      case 'happy': return Colors.green;
+      case 'neutral': return Colors.orange;
+      case 'sad': return Colors.red;
+      case 'anxious': return Colors.purple;
+      case 'excited': return Colors.blue;
+      default: return Colors.grey;
+    }
+  }
+
+  Widget _buildMoodTrends(List<Map<String, dynamic>> moodTrends) {
+    // In a real app, you'd use a charting library like 'fl_chart' here
+    // to display the moodTrends data.
+    // For this example, we'll keep the placeholder.
+
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16.0),
@@ -142,7 +163,7 @@ class _MoodAnalyticsViewState extends State<MoodAnalyticsView> {
     );
   }
 
-  Widget _buildTopTriggers() {
+  Widget _buildTopTriggers(List<Map<String, dynamic>> topTriggers) {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16.0),
@@ -154,11 +175,9 @@ class _MoodAnalyticsViewState extends State<MoodAnalyticsView> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 12),
-            _buildTriggerItem('Work Stress', 15),
-            _buildTriggerItem('Lack of Sleep', 12),
-            _buildTriggerItem('Social Situations', 8),
-            _buildTriggerItem('Weather', 6),
-            _buildTriggerItem('Exercise', 10),
+            if (topTriggers.isEmpty) Text("No trigger data available."),
+            ...topTriggers.map((triggerData) =>
+                _buildTriggerItem(triggerData['trigger'], triggerData['count'])),
           ],
         ),
       ),
@@ -181,7 +200,7 @@ class _MoodAnalyticsViewState extends State<MoodAnalyticsView> {
     );
   }
 
-  Widget _buildInsights() {
+  Widget _buildInsights(List<Map<String, dynamic>> insights) {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16.0),
@@ -193,21 +212,9 @@ class _MoodAnalyticsViewState extends State<MoodAnalyticsView> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 12),
-            _buildInsightItem(
-              Icons.trending_up,
-              'Your mood has been improving over the past week!',
-              Colors.green,
-            ),
-            _buildInsightItem(
-              Icons.schedule,
-              'You tend to feel better in the morning hours.',
-              Colors.blue,
-            ),
-            _buildInsightItem(
-              Icons.warning,
-              'Work stress appears to be your main mood trigger.',
-              Colors.orange,
-            ),
+            if (insights.isEmpty) Text("No insights available yet."),
+            ...insights.map((insight) =>
+                _buildInsightItem(insight['icon'], insight['text'], insight['color'])),
           ],
         ),
       ),

@@ -1,5 +1,6 @@
 // lib/screens/dashboard/dashboard_view.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // Import provider
 
 import 'dashboard_viewmodel.dart';
 
@@ -9,10 +10,12 @@ class DashboardView extends StatefulWidget {
 }
 
 class _DashboardViewState extends State<DashboardView> {
-  final DashboardViewModel _viewModel = DashboardViewModel();
+  // ViewModel will be provided
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = Provider.of<DashboardViewModel>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Mood Dashboard'),
@@ -28,11 +31,11 @@ class _DashboardViewState extends State<DashboardView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildWelcomeCard(),
+            _buildWelcomeCard(viewModel.userName),
             SizedBox(height: 16),
             _buildQuickActions(),
             SizedBox(height: 16),
-            _buildMoodSummary(),
+            _buildMoodSummary(viewModel),
             SizedBox(height: 16),
             _buildRecentEntries(),
           ],
@@ -42,7 +45,7 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  Widget _buildWelcomeCard() {
+  Widget _buildWelcomeCard(String userName) {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16.0),
@@ -50,7 +53,7 @@ class _DashboardViewState extends State<DashboardView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hello! How are you feeling today?',
+              'Hello $userName! How are you feeling today?',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
@@ -104,7 +107,7 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  Widget _buildMoodSummary() {
+  Widget _buildMoodSummary(DashboardViewModel viewModel) {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16.0),
@@ -119,9 +122,9 @@ class _DashboardViewState extends State<DashboardView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildMoodIndicator('Happy', Colors.green, 5),
-                _buildMoodIndicator('Neutral', Colors.orange, 2),
-                _buildMoodIndicator('Sad', Colors.red, 0),
+                _buildMoodIndicator('Happy', Colors.green, viewModel.happyCount),
+                _buildMoodIndicator('Neutral', Colors.orange, viewModel.neutralCount),
+                _buildMoodIndicator('Sad', Colors.red, viewModel.sadCount),
               ],
             ),
           ],
@@ -146,7 +149,8 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  Widget _buildRecentEntries() {
+  Widget _buildRecentEntries() { // Assuming viewModel.recentEntries is available
+    final viewModel = Provider.of<DashboardViewModel>(context, listen: false); // Or pass viewModel as param
     return Card(
       child: Padding(
         padding: EdgeInsets.all(16.0),
@@ -158,16 +162,11 @@ class _DashboardViewState extends State<DashboardView> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
-            ListTile(
-              leading: Icon(Icons.mood, color: Colors.green),
-              title: Text('Great day!'),
-              subtitle: Text('Today, 2:30 PM'),
-            ),
-            ListTile(
-              leading: Icon(Icons.mood_bad, color: Colors.orange),
-              title: Text('Feeling stressed'),
-              subtitle: Text('Yesterday, 6:15 PM'),
-            ),
+            ...viewModel.recentEntries.map((entry) => ListTile(
+              leading: Icon(entry['icon'], color: entry['color']),
+              title: Text(entry['title']),
+              subtitle: Text(entry['subtitle']),
+            )).toList(),
           ],
         ),
       ),
@@ -175,8 +174,10 @@ class _DashboardViewState extends State<DashboardView> {
   }
 
   Widget _buildBottomNavigation() {
+    final viewModel = Provider.of<DashboardViewModel>(context);
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
+      currentIndex: viewModel.currentIndex,
       items: [
         BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
         BottomNavigationBarItem(icon: Icon(Icons.mood), label: 'Mood'),
@@ -185,6 +186,7 @@ class _DashboardViewState extends State<DashboardView> {
       ],
       onTap: (index) {
         switch (index) {
+          case 0: // Dashboard is current view, handle if needed or do nothing
           case 1:
             Navigator.pushNamed(context, '/mood_tracking');
             break;
@@ -195,6 +197,7 @@ class _DashboardViewState extends State<DashboardView> {
             Navigator.pushNamed(context, '/mood_analytics');
             break;
         }
+        viewModel.onNavigationTapped(index); // Update ViewModel's current index
       },
     );
   }
