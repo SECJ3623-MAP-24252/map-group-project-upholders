@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../services/session_service.dart';
+import '../services/sessions/session_service.dart';
 
 class SessionViewModel extends ChangeNotifier {
   final SessionService _sessionService;

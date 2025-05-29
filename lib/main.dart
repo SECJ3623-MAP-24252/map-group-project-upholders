@@ -1,24 +1,23 @@
 import 'dart:math' as math;
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:map_upholders/screens/journal_reminder_page.dart';
-import 'package:map_upholders/screens/mood_chart_page.dart';
-import 'package:map_upholders/screens/mood_scale_viewer_page.dart';
-import 'package:map_upholders/screens/voice_journal_page.dart';
-import 'firebase_options.dart';
-
 import 'package:flutter/material.dart';
+import 'package:map_upholders/screens/journal/journal_reminder_page.dart';
+import 'package:map_upholders/screens/journal/voice_journal_page.dart';
+import 'package:map_upholders/screens/mood_tracking/mood_chart_page.dart';
+import 'package:map_upholders/screens/mood_tracking/mood_scale_viewer_page.dart';
 import 'package:provider/provider.dart';
 
-// import './model/user_model.dart';
-import './screens/forgot_password_screen.dart';
-import './screens/login_screen.dart';
-import './services/auth_service.dart';
-import './services/session_service.dart';
 import './viewmodels/auth_viewmodel.dart';
 import './viewmodels/session_viewmodel.dart';
-import './screens/dashboard_user_page.dart';
-import './screens/dashboard_psychiatrist_page.dart';
+import 'firebase_options.dart';
+// import './model/user_model.dart';
+import 'screens/auth/forgot_password_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/dashboard/dashboard_psychiatrist_page.dart';
+import 'screens/dashboard/dashboard_user_page.dart';
+import 'services/auth/auth_service.dart';
+import 'services/sessions/session_service.dart';
 
 
 

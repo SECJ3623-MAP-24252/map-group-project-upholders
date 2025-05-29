@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../widgets/app_drawer.dart';
+import '../../widgets/app_drawer.dart';
 
 class JournalReminderPage extends StatefulWidget {
   const JournalReminderPage({Key? key}) : super(key: key);

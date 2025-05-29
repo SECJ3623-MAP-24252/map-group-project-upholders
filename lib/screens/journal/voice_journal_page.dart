@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:map_upholders/widgets/app_drawer.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/voice_journal_viewmodel.dart';
-import '../model/voice_journal_entry.dart';
+
+import '../../viewmodels/voice_journal_viewmodel.dart';
 
 class VoiceJournalPage extends StatelessWidget {
   const VoiceJournalPage({super.key});

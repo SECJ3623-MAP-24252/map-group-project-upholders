@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../viewmodels/auth_viewmodel.dart';
-import '../viewmodels/session_viewmodel.dart';
+import '../../viewmodels/auth_viewmodel.dart';
+import '../../viewmodels/session_viewmodel.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});

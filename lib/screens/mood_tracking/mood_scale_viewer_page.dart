@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
 import 'dart:math';
-import '../widgets/app_drawer.dart'; // Adjust path as needed
+
+import 'package:flutter/material.dart';
+
+import '../../widgets/app_drawer.dart'; // Adjust path as needed
 
 class MoodScaleViewerPage extends StatelessWidget {
   const MoodScaleViewerPage({super.key});
