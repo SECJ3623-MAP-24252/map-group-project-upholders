@@ -2,8 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 // import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import '../model/user_model.dart';
-import '../services/user_service.dart';
+import '../../model/user.dart';
+import '../user/user_service.dart';
 
 class AuthRecoveryService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
