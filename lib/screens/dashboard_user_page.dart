@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../model/mood_model.dart';
 import '../viewmodels/mood_viewmodel.dart';
+import '../widgets/app_drawer.dart';
 
 class DashboardUserPage extends StatelessWidget {
   const DashboardUserPage({super.key});
@@ -45,6 +47,32 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
     _moodNoteController.dispose();
     super.dispose();
   }
+
+  // Open camera and show preview (for now just print the path)
+  Future<void> _openCamera() async {
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.front, // <-- use front camera
+    );
+    if (image != null) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Picture Taken'),
+          content: Text('File path: ${image.path}'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
 
   void _showAddMoodDialog(BuildContext context, MoodViewModel viewModel, [DateTime? presetDay]) {
     int? selectedEmojiIndex;
@@ -151,92 +179,6 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
     );
   }
 
-  Widget _buildCalendar(MoodViewModel viewModel) {
-    return TableCalendar(
-      firstDay: DateTime.utc(2020, 1, 1),
-      lastDay: DateTime.utc(2100, 12, 31),
-      focusedDay: _focusedDay,
-      selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-      calendarFormat: CalendarFormat.month,
-      calendarStyle: CalendarStyle(
-        todayDecoration: BoxDecoration(
-          color: Colors.green.shade100,
-          shape: BoxShape.circle,
-        ),
-        selectedDecoration: BoxDecoration(
-          color: Colors.deepOrange.shade200,
-          shape: BoxShape.circle,
-        ),
-        markersMaxCount: 1,
-      ),
-      daysOfWeekStyle: const DaysOfWeekStyle(
-        weekdayStyle: TextStyle(color: Colors.black54),
-        weekendStyle: TextStyle(color: Colors.black38),
-      ),
-      headerStyle: const HeaderStyle(
-        formatButtonVisible: false,
-        titleCentered: true,
-      ),
-      onDaySelected: (selectedDay, focusedDay) {
-        setState(() {
-          _selectedDay = selectedDay;
-          _focusedDay = focusedDay;
-        });
-        _showAddMoodDialog(context, Provider.of<MoodViewModel>(context, listen: false), selectedDay);
-      },
-      calendarBuilders: CalendarBuilders(
-        defaultBuilder: (context, day, focusedDay) {
-          final mood = Provider.of<MoodViewModel>(context, listen: false).getMoodForDay(day);
-          return Center(
-            child: Text(
-              mood?.emoji ?? "🙂",
-              style: TextStyle(
-                fontSize: 24,
-                color: mood?.color ?? Colors.grey[350],
-              ),
-            ),
-          );
-        },
-        todayBuilder: (context, day, focusedDay) {
-          final mood = Provider.of<MoodViewModel>(context, listen: false).getMoodForDay(day);
-          return Container(
-            decoration: BoxDecoration(
-              color: Colors.green.shade100,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              mood?.emoji ?? "🙂",
-              style: TextStyle(
-                fontSize: 24,
-                color: mood?.color ?? Colors.grey[350],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          );
-        },
-        selectedBuilder: (context, day, focusedDay) {
-          final mood = Provider.of<MoodViewModel>(context, listen: false).getMoodForDay(day);
-          return Container(
-            decoration: BoxDecoration(
-              color: Colors.deepOrange.shade200,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              mood?.emoji ?? "🙂",
-              style: TextStyle(
-                fontSize: 24,
-                color: mood?.color ?? Colors.grey[350],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<MoodViewModel>(
@@ -244,12 +186,19 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
         return Scaffold(
           backgroundColor: const Color(0xFFFCF8F4),
           appBar: AppBar(
-            title: const Text('Mood Calendar', style: TextStyle(color: Colors.brown)),
+            title: const Text('Home', style: TextStyle(color: Colors.brown)),
             backgroundColor: Colors.transparent,
             elevation: 0,
             centerTitle: true,
             iconTheme: const IconThemeData(color: Colors.brown),
+            leading: Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.menu, color: Colors.brown),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+            ),
           ),
+          drawer: const AppDrawer(currentRoute: '/dashboard-user'),
           body: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 20),
             children: [
@@ -262,7 +211,89 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                 elevation: 3,
                 child: Padding(
                   padding: const EdgeInsets.all(10.0),
-                  child: _buildCalendar(viewModel),
+                  child: TableCalendar(
+                    firstDay: DateTime.utc(2020, 1, 1),
+                    lastDay: DateTime.utc(2100, 12, 31),
+                    focusedDay: _focusedDay,
+                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                    calendarFormat: CalendarFormat.month,
+                    calendarStyle: CalendarStyle(
+                      todayDecoration: BoxDecoration(
+                        color: Colors.green.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      selectedDecoration: BoxDecoration(
+                        color: Colors.deepOrange.shade200,
+                        shape: BoxShape.circle,
+                      ),
+                      markersMaxCount: 1,
+                    ),
+                    daysOfWeekStyle: const DaysOfWeekStyle(
+                      weekdayStyle: TextStyle(color: Colors.black54),
+                      weekendStyle: TextStyle(color: Colors.black38),
+                    ),
+                    headerStyle: const HeaderStyle(
+                      formatButtonVisible: false,
+                      titleCentered: true,
+                    ),
+                    onDaySelected: (selectedDay, focusedDay) {
+                      setState(() {
+                        _selectedDay = selectedDay;
+                        _focusedDay = focusedDay;
+                      });
+                      _showAddMoodDialog(context, Provider.of<MoodViewModel>(context, listen: false), selectedDay);
+                    },
+                    calendarBuilders: CalendarBuilders(
+                      defaultBuilder: (context, day, focusedDay) {
+                        final mood = Provider.of<MoodViewModel>(context, listen: false).getMoodForDay(day);
+                        return Center(
+                          child: Text(
+                            mood?.emoji ?? "🙂",
+                            style: TextStyle(
+                              fontSize: 24,
+                              color: mood?.color ?? Colors.grey[350],
+                            ),
+                          ),
+                        );
+                      },
+                      todayBuilder: (context, day, focusedDay) {
+                        final mood = Provider.of<MoodViewModel>(context, listen: false).getMoodForDay(day);
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            mood?.emoji ?? "🙂",
+                            style: TextStyle(
+                              fontSize: 24,
+                              color: mood?.color ?? Colors.grey[350],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
+                      selectedBuilder: (context, day, focusedDay) {
+                        final mood = Provider.of<MoodViewModel>(context, listen: false).getMoodForDay(day);
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.deepOrange.shade200,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            mood?.emoji ?? "🙂",
+                            style: TextStyle(
+                              fontSize: 24,
+                              color: mood?.color ?? Colors.grey[350],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -286,10 +317,24 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
               const SizedBox(height: 80),
             ],
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () => _showAddMoodDialog(context, viewModel),
-            backgroundColor: const Color(0xFFA7B77A),
-            child: const Icon(Icons.add, color: Colors.white, size: 34),
+          floatingActionButton: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FloatingActionButton(
+                heroTag: "fab_add",
+                onPressed: () => _showAddMoodDialog(context, viewModel),
+                backgroundColor: const Color(0xFFA7B77A),
+                child: const Icon(Icons.add, color: Colors.white, size: 32),
+              ),
+              const SizedBox(width: 18),
+              FloatingActionButton(
+                heroTag: "fab_camera",
+                onPressed: _openCamera,
+                backgroundColor: Colors.deepOrange.shade200,
+                child: const Icon(Icons.camera_alt, color: Colors.white, size: 28),
+              ),
+            ],
           ),
           floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         );

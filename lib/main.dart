@@ -1,4 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:map_upholders/screens/journal_reminder_page.dart';
+import 'package:map_upholders/screens/mood_chart_page.dart';
+import 'package:map_upholders/screens/mood_scale_viewer_page.dart';
+import 'package:map_upholders/screens/voice_journal_page.dart';
 import 'firebase_options.dart';
 
 import 'package:flutter/material.dart';
@@ -13,6 +17,8 @@ import './viewmodels/auth_viewmodel.dart';
 import './viewmodels/session_viewmodel.dart';
 import './screens/dashboard_user_page.dart';
 import './screens/dashboard_psychiatrist_page.dart';
+
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +67,10 @@ class MyApp extends StatelessWidget {
           '/forgot-password': (context) => ForgotPasswordScreen(),
           '/dashboard-user': (context) => DashboardUserPage(),
           '/dashboard-psychiatrist': (context) => DashboardPsychiatristPage(),
+          '/mood-scale-viewer': (context) => MoodScaleViewerPage(),
+          '/voice-journal': (context) => VoiceJournalPage(),
+          '/mood-chart': (context) => MoodChartPage(),
+          '/journal-reminder': (context) => JournalReminderPage(),
         },
       ),
     );
