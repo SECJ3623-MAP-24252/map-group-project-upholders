@@ -25,8 +25,6 @@ class AppDrawer extends StatelessWidget {
             _drawerItem(context, Icons.auto_graph, 'Mood Chart', "See your mood stats", '/mood-chart'),
             _drawerItem(context, Icons.notifications, 'Journal Reminder', "Set up daily reminders", '/journal-reminder'),
             const Divider(),
-            _drawerItem(context, Icons.sync, 'Real-time Database Sync', "Sync data instantly", null),
-            _drawerItem(context, Icons.edit, 'Mood Entry Editor', "Update mood entries", null),
             _drawerItem(context, Icons.transcribe, 'Voice-to-Text', "Transcribe your journal", null),
             const Divider(),
             _drawerItem(context, Icons.settings, 'Settings', "App settings", null),

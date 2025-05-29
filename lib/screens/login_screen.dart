@@ -80,7 +80,7 @@ class LoginScreenState extends State<LoginScreen> {
                     'Upholder Mood Tracker',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 30,
+                      fontSize: 20,
                       color: Colors.brown[700],
                       letterSpacing: 1.2,
                     ),

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -31,11 +33,9 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
   final List<Map<String, dynamic>> _emojiOptions = [
     {"emoji": "😀", "label": "Happy", "color": const Color(0xFF72BF69)},
     {"emoji": "😊", "label": "Grateful", "color": const Color(0xFF6EC4E3)},
-    {"emoji": "😞", "label": "Sad", "color": const Color(0xFFFFB24A)},
     {"emoji": "😐", "label": "Neutral", "color": const Color(0xFFB7B77B)},
+    {"emoji": "😞", "label": "Sad", "color": const Color(0xFFFFB24A)},
     {"emoji": "😡", "label": "Angry", "color": const Color(0xFFD64550)},
-    {"emoji": "😲", "label": "Surprised", "color": const Color(0xFFFFDF7F)},
-    {"emoji": "😴", "label": "Sleepy", "color": const Color(0xFF8E85A6)},
   ];
 
   DateTime _focusedDay = DateTime.now();
@@ -48,20 +48,43 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
     super.dispose();
   }
 
-  // Open camera and show preview (for now just print the path)
-  Future<void> _openCamera() async {
+  // Open camera and show preview (save dummy mood: happy)
+  Future<void> _openCamera(MoodViewModel viewModel) async {
     final picker = ImagePicker();
     final XFile? image = await picker.pickImage(
       source: ImageSource.camera,
-      preferredCameraDevice: CameraDevice.front, // <-- use front camera
+      preferredCameraDevice: CameraDevice.front,
     );
     if (image != null) {
+      // Always "Happy" for dummy
+      viewModel.addMood(
+        MoodModel(
+          emoji: "😀",
+          label: "Happy",
+          color: const Color(0xFF72BF69),
+          note: "Photo mood detected: Happy",
+          date: DateTime.now(),
+          imagePath: image.path,
+        ),
+      );
       if (!mounted) return;
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
           title: const Text('Picture Taken'),
-          content: Text('File path: ${image.path}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.file(
+                File(image.path),
+                height: 120,
+                width: 120,
+                fit: BoxFit.cover,
+              ),
+              const SizedBox(height: 8),
+              const Text('Dummy result: Happy 😊'),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -72,7 +95,6 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
       );
     }
   }
-
 
   void _showAddMoodDialog(BuildContext context, MoodViewModel viewModel, [DateTime? presetDay]) {
     int? selectedEmojiIndex;
@@ -184,7 +206,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
     return Consumer<MoodViewModel>(
       builder: (context, viewModel, _) {
         return Scaffold(
-          backgroundColor: const Color(0xFFFCF8F4),
+          backgroundColor: const Color(0xFFFAF3E3),
           appBar: AppBar(
             title: const Text('Home', style: TextStyle(color: Colors.brown)),
             backgroundColor: Colors.transparent,
@@ -204,7 +226,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-                child: Text('Tap any day to set your mood!', style: TextStyle(color: Colors.brown[600], fontWeight: FontWeight.bold)),
+                child: Text('Tap any day to set your mood or add as many as you like!', style: TextStyle(color: Colors.brown[600], fontWeight: FontWeight.bold)),
               ),
               Card(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -245,7 +267,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                     },
                     calendarBuilders: CalendarBuilders(
                       defaultBuilder: (context, day, focusedDay) {
-                        final mood = Provider.of<MoodViewModel>(context, listen: false).getMoodForDay(day);
+                        final mood = Provider.of<MoodViewModel>(context, listen: false).getAverageMoodForDay(day);
                         return Center(
                           child: Text(
                             mood?.emoji ?? "🙂",
@@ -257,7 +279,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                         );
                       },
                       todayBuilder: (context, day, focusedDay) {
-                        final mood = Provider.of<MoodViewModel>(context, listen: false).getMoodForDay(day);
+                        final mood = Provider.of<MoodViewModel>(context, listen: false).getAverageMoodForDay(day);
                         return Container(
                           decoration: BoxDecoration(
                             color: Colors.green.shade100,
@@ -275,7 +297,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                         );
                       },
                       selectedBuilder: (context, day, focusedDay) {
-                        final mood = Provider.of<MoodViewModel>(context, listen: false).getMoodForDay(day);
+                        final mood = Provider.of<MoodViewModel>(context, listen: false).getAverageMoodForDay(day);
                         return Container(
                           decoration: BoxDecoration(
                             color: Colors.deepOrange.shade200,
@@ -303,7 +325,17 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                 margin: const EdgeInsets.symmetric(vertical: 3, horizontal: 6),
                 color: Colors.white,
                 child: ListTile(
-                  leading: CircleAvatar(
+                  leading: entry.imagePath != null
+                      ? ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.file(
+                      File(entry.imagePath!),
+                      height: 38,
+                      width: 38,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                      : CircleAvatar(
                     backgroundColor: entry.color,
                     child: Text(entry.emoji, style: const TextStyle(fontSize: 22)),
                   ),
@@ -330,7 +362,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
               const SizedBox(width: 18),
               FloatingActionButton(
                 heroTag: "fab_camera",
-                onPressed: _openCamera,
+                onPressed: () => _openCamera(viewModel),
                 backgroundColor: Colors.deepOrange.shade200,
                 child: const Icon(Icons.camera_alt, color: Colors.white, size: 28),
               ),

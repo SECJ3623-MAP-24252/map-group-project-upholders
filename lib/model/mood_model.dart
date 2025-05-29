@@ -1,3 +1,5 @@
+// model/mood_model.dart
+
 import 'package:flutter/material.dart';
 
 class MoodModel {
@@ -6,6 +8,7 @@ class MoodModel {
   final Color color;
   final String note;
   final DateTime date;
+  final String? imagePath;
 
   MoodModel({
     required this.emoji,
@@ -13,5 +16,7 @@ class MoodModel {
     required this.color,
     required this.note,
     required this.date,
+    this.imagePath,
   });
 }
+

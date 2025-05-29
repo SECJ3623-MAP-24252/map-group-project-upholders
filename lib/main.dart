@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:map_upholders/screens/journal_reminder_page.dart';
 import 'package:map_upholders/screens/mood_chart_page.dart';
@@ -84,11 +86,24 @@ class SplashScreen extends StatefulWidget {
   SplashScreenState createState() => SplashScreenState();
 }
 
-class SplashScreenState extends State<SplashScreen> {
+class SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _emojiController;
+
   @override
   void initState() {
     super.initState();
+    _emojiController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+
     checkSession();
+  }
+
+  @override
+  void dispose() {
+    _emojiController.dispose();
+    super.dispose();
   }
 
   void checkSession() async {
@@ -96,34 +111,145 @@ class SplashScreenState extends State<SplashScreen> {
       context,
       listen: false,
     );
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
     if (await sessionViewModel.isSessionActive()) {
-      if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/dashboard');
     } else {
-      if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/login');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Emoji list for floating effect
+    final emojis = ["😀", "😊", "😞", "😐", "😡", "😲", "😴"];
+
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Mood Tracker',
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          // Gradient background
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFFA7B77A), // soft green
+                  Color(0xFFE6E1C5), // cream
+                  Color(0xFFFFDF7F), // yellow
+                  Color(0xFFD6E4FF), // blueish
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-            SizedBox(height: 20),
-            CircularProgressIndicator(),
-          ],
-        ),
+          ),
+          // Animated mood emojis (floating)
+          ...List.generate(emojis.length, (i) {
+            final angle = i * 2 * math.pi / emojis.length;
+            return AnimatedBuilder(
+              animation: _emojiController,
+              builder: (context, child) {
+                final radius = 110.0 + 25 * math.sin(_emojiController.value * 2 * math.pi + angle);
+                final dx = 0.45 + 0.45 * math.cos(angle);
+                final dy = 0.45 + 0.35 * math.sin(angle);
+                return Positioned(
+                  left: MediaQuery.of(context).size.width * dx - 30,
+                  top: MediaQuery.of(context).size.height * dy - 30,
+                  child: Opacity(
+                    opacity: 0.8,
+                    child: Text(
+                      emojis[i],
+                      style: TextStyle(
+                        fontSize: 48 + 12 * math.sin(_emojiController.value * 2 * math.pi + angle),
+                        shadows: [
+                          Shadow(
+                            blurRadius: 10,
+                            color: Colors.brown.withOpacity(0.15),
+                            offset: Offset(3, 6),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+          // App logo & title
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // App logo (change as needed, currently an emoji & mood ring)
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFB0E57C), Color(0xFF6EC4E3)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.brown.withOpacity(0.13),
+                        blurRadius: 30,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    children: const [
+                      Text(
+                        "😊",
+                        style: TextStyle(fontSize: 54),
+                      ),
+                      SizedBox(height: 5),
+                      Text(
+                        "🎤",
+                        style: TextStyle(fontSize: 24, color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 26),
+                Text(
+                  'Mood Tracker',
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Nunito', // or any modern rounded font
+                    letterSpacing: 1,
+                    color: Colors.brown[800],
+                    shadows: [
+                      Shadow(
+                        blurRadius: 8,
+                        color: Colors.brown.withOpacity(0.13),
+                        offset: const Offset(2, 4),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Your Mood, Your Journey",
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.brown[400],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 44),
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFA7B77A)),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
