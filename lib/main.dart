@@ -9,7 +9,7 @@ import 'screens/auth/login_view.dart';
 import 'screens/dashboard/dashboard_psychiatrist_view.dart';
 import 'screens/dashboard/dashboard_user_view.dart';
 import 'services/auth/auth_service.dart';
-import 'services/sessions/session_service.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,24 +25,14 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<AuthService>(create: (_) => AuthService()),
-        Provider<SessionService>(create: (_) => SessionService()),
+        // Removed SessionService provider as it's not being used
         ChangeNotifierProxyProvider<AuthService, AuthViewModel>(
           create:
               (context) => AuthViewModel(
                 Provider.of<AuthService>(context, listen: false),
               ),
           update:
-              (context, authService, previous) =>
-                  previous ?? AuthViewModel(authService),
-        ),
-        ChangeNotifierProxyProvider<SessionService, SessionViewModel>(
-          create:
-              (context) => SessionViewModel(
-                Provider.of<SessionService>(context, listen: false),
-              ),
-          update:
-              (context, sessionService, previous) =>
-                  previous ?? SessionViewModel(sessionService),
+              (context, authService, previousAuthViewModel) => AuthViewModel(authService),
         ),
       ],
       child: MaterialApp(
@@ -79,36 +69,54 @@ class SplashScreenState extends State<SplashScreen> {
   }
 
   void checkSession() async {
-    final sessionViewModel = Provider.of<SessionViewModel>(
-      context,
-      listen: false,
-    );
-    await Future.delayed(Duration(seconds: 2));
+    // Capture navigator if you prefer, or use context directly with mounted checks
+    final navigator = Navigator.of(context);
+
+    await Future.delayed(const Duration(seconds: 2)); // Added const
 
     if (!mounted) return;
 
-    if (await sessionViewModel.isSessionActive()) {
+    bool sessionActive;
+    try {
+      // Check Firebase Auth directly for an active user session
+      final currentUser = FirebaseAuth.instance.currentUser;
+      sessionActive = currentUser != null;
+    } catch (e) {
+      // Log error if any unexpected issue occurs during Firebase check
+      print('Error checking Firebase session: $e');
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/dashboard');
+      navigator.pushReplacementNamed('/login');
+      return;
+    }
+
+    if (!mounted) return; // Check after the await
+
+    if (sessionActive) {
+      // TODO: Determine which dashboard to navigate to based on user role.
+      // If sessionActive is true, FirebaseAuth.instance.currentUser is not null.
+      // You might need to fetch user details (like role) from Firestore
+      // using FirebaseAuth.instance.currentUser.uid to decide the dashboard.
+      // Defaulting to '/dashboard-user' as a placeholder.
+      navigator.pushReplacementNamed('/dashboard-user');
     } else {
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/login');
+      navigator.pushReplacementNamed('/login');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold( // Added const
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               'Mood Tracker',
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold), // This TextStyle can be const
             ),
-            SizedBox(height: 20),
-            CircularProgressIndicator(),
+            SizedBox(height: 20), // This SizedBox can be const
+            CircularProgressIndicator(), // This can be const
           ],
         ),
       ),
