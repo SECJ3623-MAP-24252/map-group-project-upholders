@@ -2,14 +2,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import './services/auth_service.dart';
-import './services/session_service.dart';
 import 'firebase_options.dart';
 // import './model/user_model.dart';
 import 'screens/auth/forgot_password_view.dart';
 import 'screens/auth/login_view.dart';
 import 'screens/dashboard/dashboard_psychiatrist_view.dart';
 import 'screens/dashboard/dashboard_user_view.dart';
+import 'services/auth/auth_service.dart';
+import 'services/sessions/session_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
