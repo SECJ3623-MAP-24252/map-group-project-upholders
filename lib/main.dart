@@ -5,13 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 // import './model/user_model.dart';
-import './screens/dashboard_screen.dart';
 import './screens/forgot_password_screen.dart';
 import './screens/login_screen.dart';
 import './services/auth_service.dart';
 import './services/session_service.dart';
 import './viewmodels/auth_viewmodel.dart';
 import './viewmodels/session_viewmodel.dart';
+import './screens/dashboard_user_page.dart';
+import './screens/dashboard_psychiatrist_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,7 +59,8 @@ class MyApp extends StatelessWidget {
           '/': (context) => SplashScreen(),
           '/login': (context) => LoginScreen(),
           '/forgot-password': (context) => ForgotPasswordScreen(),
-          '/dashboard': (context) => DashboardScreen(),
+          '/dashboard-user': (context) => DashboardUserPage(),
+          '/dashboard-psychiatrist': (context) => DashboardPsychiatristPage(),
         },
       ),
     );

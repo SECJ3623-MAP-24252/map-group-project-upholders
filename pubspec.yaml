@@ -40,6 +40,8 @@ dependencies:
     cupertino_icons: ^1.0.8
     google_sign_in: ^6.3.0
     flutter_secure_storage: ^9.2.4
+    intl: ^0.20.2
+    table_calendar: ^3.2.0
 
 dev_dependencies:
     flutter_test:
@@ -52,10 +54,11 @@ dev_dependencies:
     # rules and activating additional ones.
     flutter_lints: ^5.0.0
 
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
+    # For information on the generic Dart part of this file, see the
+    # following page: https://dart.dev/tools/pub/pubspec
 
-# The following section is specific to Flutter packages.
+    # The following section is specific to Flutter packages.
+    firebase_data_connect: ^0.1.0
 flutter:
     # The following line ensures that the Material Icons font is
     # included with your application, so that you can use the icons in
