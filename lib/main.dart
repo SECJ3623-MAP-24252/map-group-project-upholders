@@ -9,6 +9,7 @@ import 'package:map_upholders/screens/mood_tracking/mood_chart_page.dart';
 import 'package:map_upholders/screens/mood_tracking/mood_scale_viewer_page.dart';
 import 'package:provider/provider.dart';
 
+import './model/auth_models.dart'; // For UserRole enum
 import './viewmodels/auth_viewmodel.dart';
 import './viewmodels/session_viewmodel.dart';
 import 'firebase_options.dart';
@@ -108,17 +109,49 @@ class SplashScreenState extends State<SplashScreen> with SingleTickerProviderSta
   }
 
   void checkSession() async {
-    final sessionViewModel = Provider.of<SessionViewModel>(
-      context,
-      listen: false,
-    );
-    await Future.delayed(const Duration(seconds: 2));
+    // ViewModel providers
+    final sessionViewModel = Provider.of<SessionViewModel>(context, listen: false);
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+
+    await Future.delayed(const Duration(seconds: 2)); // Simulate loading/splash time
 
     if (!mounted) return;
 
+    // Check if a session is considered active
     if (await sessionViewModel.isSessionActive()) {
-      Navigator.of(context).pushReplacementNamed('/dashboard');
+      // Attempt to load the current user.
+      // Note: AuthViewModel.currentUser is UserModel.
+      // It's crucial that AuthViewModel loads/retains the user profile
+      // if a Firebase session is active upon app restart.
+      final userModel = authViewModel.currentUser; 
+
+      if (userModel != null) {
+        final userRole = UserRole.fromString(userModel.userType);
+        // Navigate based on user role
+        switch (userRole) {
+          case UserRole.therapist:
+            Navigator.of(context).pushReplacementNamed('/dashboard-therapist');
+            break;
+          case UserRole.student:
+          // Add other roles here if they should go to the user dashboard
+          // For example, UserRole.lecturer or UserRole.admin if they use the general user dashboard
+            Navigator.of(context).pushReplacementNamed('/dashboard-user');
+            break;
+          default:
+            // Fallback for unknown or unhandled roles (e.g., admin, lecturer if they don't have specific dashboards yet)
+            // Or if userModel.userType results in UserRole.unknown
+            print("User role '${userModel.userType}' (parsed as ${userRole}) not explicitly handled for dashboard, defaulting to /dashboard-user.");
+            Navigator.of(context).pushReplacementNamed('/dashboard-user');
+        }
+      } else {
+        // Session is active, but user profile (UserModel) couldn't be loaded from AuthViewModel.
+        // This might indicate an inconsistent state or that AuthViewModel hasn't re-fetched
+        // user details upon app restart. Best to go to login.
+        print("Session active but user profile (UserModel from AuthViewModel) is null. Navigating to login.");
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     } else {
+      // No active session
       Navigator.of(context).pushReplacementNamed('/login');
     }
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../model/journal_model.dart'; // Added for JournalEntry
+import '../../services/journal/journal_service.dart'; // Added for JournalService
 import '../../widgets/app_drawer.dart';
 
 class JournalReminderPage extends StatefulWidget {
@@ -13,25 +15,9 @@ class JournalReminderPage extends StatefulWidget {
 class _JournalReminderPageState extends State<JournalReminderPage> {
   late DateTime _now;
   late final _timer;
-
-  // Now mutable, not final!
-  List<Map<String, String>> _journalEntries = [
-    {
-      'date': '2024-05-29',
-      'title': 'Feeling Grateful',
-      'excerpt': 'Today I felt grateful for the small wins and support from my friends.'
-    },
-    {
-      'date': '2024-05-28',
-      'title': 'Challenging Day',
-      'excerpt': 'Work was tough, but I managed my stress by taking a long walk.'
-    },
-    {
-      'date': '2024-05-27',
-      'title': 'New Achievements',
-      'excerpt': 'Tried something new and succeeded—felt proud and motivated!'
-    },
-  ];
+  final JournalService _journalService = JournalService();
+  List<JournalEntry> _journalEntries = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -39,19 +25,55 @@ class _JournalReminderPageState extends State<JournalReminderPage> {
     _now = DateTime.now();
     _timer = Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now())
         .listen((now) {
-      setState(() => _now = now);
+      if (mounted) { // Check if widget is still in the tree
+        setState(() => _now = now);
+      }
     });
+    _loadEntries();
+  }
+
+  Future<void> _loadEntries() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final entries = await _journalService.getJournalEntries();
+      if (mounted) {
+        setState(() {
+          // Sort entries by date, newest first, and take top 3-5 for reminder page
+          _journalEntries = entries..sort((a, b) => b.date.compareTo(a.date));
+          // _journalEntries = _journalEntries.take(5).toList(); // Optionally limit displayed entries
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading entries: $e')));
+      }
+    }
   }
 
   @override
   void dispose() {
     _timer.cancel();
     super.dispose();
+    titleController.dispose(); // Dispose controller
+    contentController.dispose(); // Dispose controller
   }
 
+  // Define controllers at the class level to dispose them properly
+  final titleController = TextEditingController();
+  final contentController = TextEditingController();
+
   void _openWriteJournalModal(BuildContext context) {
-    final titleController = TextEditingController();
-    final excerptController = TextEditingController();
+    // Clear controllers when modal opens for a new entry
+    titleController.clear();
+    contentController.clear();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -95,7 +117,7 @@ class _JournalReminderPageState extends State<JournalReminderPage> {
               ),
               const SizedBox(height: 14),
               TextField(
-                controller: excerptController,
+                controller: contentController,
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
                   labelText: "What's on your mind?",
@@ -127,28 +149,39 @@ class _JournalReminderPageState extends State<JournalReminderPage> {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   onPressed: () {
-                    final String title = titleController.text.trim();
-                    final String excerpt = excerptController.text.trim();
-                    if (title.isNotEmpty && excerpt.isNotEmpty) {
-                      setState(() {
-                        _journalEntries.insert(0, {
-                          'date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
-                          'title': title,
-                          'excerpt': excerpt,
-                        });
-                      });
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Journal entry saved!'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
+                    final String title = titleController.text.trim(); // Title from modal
+                    final String content = contentController.text.trim(); // Content from modal
+
+                    if (title.isNotEmpty && content.isNotEmpty) {
+                      final newEntry = JournalEntry(
+                        // id will be generated by service/backend or null if not needed before save
+                        title: title,
+                        content: content,
+                        date: DateTime.now(),
                       );
-                    } else {
-                      // Show error if fields are empty
+
+                      _journalService.saveJournalEntry(newEntry).then((_) {
+                        _loadEntries(); // Refresh the list from the service
+                        Navigator.pop(context); // Close the modal
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Journal entry saved!'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }).catchError((error) {
+                        Navigator.pop(context); // Close the modal
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to save entry: $error'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      });
+                    } else { // If fields are empty
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Please fill in all fields.'),
+                          content: Text('Please fill in both title and content.'),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -202,20 +235,24 @@ class _JournalReminderPageState extends State<JournalReminderPage> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: _journalEntries.isEmpty
-                    ? _emptyJournalPlaceholder()
-                    : ListView.separated(
-                  itemCount: _journalEntries.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, idx) {
-                    final entry = _journalEntries[idx];
-                    return _JournalEntryCard(
-                      date: entry['date']!,
-                      title: entry['title']!,
-                      excerpt: entry['excerpt']!,
-                    );
-                  },
-                ),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF9D4EDD)))
+                    : _journalEntries.isEmpty
+                        ? _emptyJournalPlaceholder()
+                        : ListView.separated(
+                            itemCount: _journalEntries.length,
+                            // itemCount: _journalEntries.take(5).length, // Optionally limit displayed entries
+                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            itemBuilder: (context, idx) {
+                              final entry = _journalEntries[idx];
+                              return _JournalEntryCard(
+                                // Pass data from JournalEntry object
+                                date: entry.date.toIso8601String(), // Card expects a parseable date string
+                                title: entry.title,
+                                excerpt: entry.content,
+                              );
+                            },
+                          ),
               ),
             ),
             const SizedBox(height: 16),
@@ -322,12 +359,12 @@ class _JournalReminderPageState extends State<JournalReminderPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.menu_book_rounded, color: Colors.white24, size: 60),
+          Icon(Icons.menu_book_rounded, color: Colors.grey.shade400, size: 60),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             "No journal entries yet.\nStart writing to track your mood journey!",
             style: TextStyle(
-              color: Colors.white38,
+              color: Colors.grey.shade600,
               fontSize: 15,
               fontStyle: FontStyle.italic,
               height: 1.3,
