@@ -15,7 +15,7 @@ import 'firebase_options.dart';
 // import './model/user_model.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/dashboard/dashboard_psychiatrist_page.dart';
+import 'screens/dashboard/dashboard_therapist_page.dart'; // Updated import
 import 'screens/dashboard/dashboard_user_page.dart';
 import 'services/auth/auth_service.dart';
 import 'services/sessions/session_service.dart';
@@ -68,7 +68,7 @@ class MyApp extends StatelessWidget {
           '/login': (context) => LoginScreen(),
           '/forgot-password': (context) => ForgotPasswordScreen(),
           '/dashboard-user': (context) => DashboardUserPage(),
-          '/dashboard-psychiatrist': (context) => DashboardPsychiatristPage(),
+          '/dashboard-therapist': (context) => DashboardTherapistPage(), // Updated route
           '/mood-scale-viewer': (context) => MoodScaleViewerPage(),
           '/voice-journal': (context) => VoiceJournalPage(),
           '/mood-chart': (context) => MoodChartPage(),

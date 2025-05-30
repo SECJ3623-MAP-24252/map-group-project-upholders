@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class DashboardPsychiatristPage extends StatelessWidget {
-  const DashboardPsychiatristPage({super.key});
+class DashboardTherapistPage extends StatelessWidget {
+  const DashboardTherapistPage({super.key});
 
   @override
   Widget build(BuildContext context) {
