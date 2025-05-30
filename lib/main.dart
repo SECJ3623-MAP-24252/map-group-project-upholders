@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:map_upholders/screens/journal/journal_list_screen.dart'; // <-- ADD THIS IMPORT
 import 'package:map_upholders/screens/journal/journal_reminder_page.dart';
 import 'package:map_upholders/screens/journal/voice_journal_page.dart';
 import 'package:map_upholders/screens/mood_tracking/mood_chart_page.dart';
@@ -72,6 +73,7 @@ class MyApp extends StatelessWidget {
           '/voice-journal': (context) => VoiceJournalPage(),
           '/mood-chart': (context) => MoodChartPage(),
           '/journal-reminder': (context) => JournalReminderPage(),
+          '/journal-list': (context) => JournalListScreen(), // <-- ADD THIS ROUTE
         },
       ),
     );
