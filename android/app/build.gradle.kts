@@ -6,7 +6,10 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    //new
+//    id("com.google.gms.google-services") version "4.4.2" apply false
 }
+
 
 android {
     namespace = "com.example.map_upholders"
@@ -16,7 +19,15 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
+    dependencies {
+        // ... (dependency lain)
+        coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+        implementation(platform("com.google.firebase:firebase-bom:33.15.0"))
+        implementation("com.google.firebase:firebase-analytics")
+    }
+
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()

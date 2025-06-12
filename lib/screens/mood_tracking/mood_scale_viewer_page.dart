@@ -161,7 +161,7 @@ class _MoodSummaryCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _summaryItem("Avg", "${avg.toStringAsFixed(1)}", Icons.emoji_emotions),
+                _summaryItem("Avg", avg.toStringAsFixed(1), Icons.emoji_emotions),
                 _summaryItem("Highest", highest != null ? highest['score'].toString() : "-", Icons.trending_up),
                 _summaryItem("Lowest", lowest != null ? lowest['score'].toString() : "-", Icons.trending_down),
               ],
@@ -202,8 +202,8 @@ class _MoodLegend extends StatelessWidget {
             children: [
               CircleAvatar(
                 backgroundColor: m['color'],
-                child: Text(m['emoji'], style: const TextStyle(fontSize: 18)),
                 radius: 18,
+                child: Text(m['emoji'], style: const TextStyle(fontSize: 18)),
               ),
               const SizedBox(width: 4),
               Text(m['label'], style: TextStyle(color: Colors.brown[600], fontSize: 13)),

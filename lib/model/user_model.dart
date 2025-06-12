@@ -24,7 +24,7 @@ class UserModel {
       id: id,
       email: map['email'] ?? '',
       name: map['name'] ?? '',
-      userType: map['userType'] ?? 'student',
+      userType: map['userType'] ?? 'user',
       profilePicUrl: map['profilePicUrl'],
       createdAt: map['createdAt'] is Timestamp 
           ? (map['createdAt'] as Timestamp).toDate() 

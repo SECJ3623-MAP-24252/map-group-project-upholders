@@ -1,32 +1,30 @@
 import 'dart:math' as math;
 
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:flutter/material.dart';
-import 'package:map_upholders/screens/journal/journal_list_screen.dart'; // <-- ADD THIS IMPORT
+import 'package:map_upholders/screens/journal/journal_list_screen.dart';
 import 'package:map_upholders/screens/journal/journal_reminder_page.dart';
 import 'package:map_upholders/screens/journal/voice_journal_page.dart';
 import 'package:map_upholders/screens/mood_tracking/mood_chart_page.dart';
 import 'package:map_upholders/screens/mood_tracking/mood_scale_viewer_page.dart';
-import 'package:provider/provider.dart';
 
+import 'package:provider/provider.dart';
 import './model/auth_models.dart'; // For UserRole enum
 import './viewmodels/auth_viewmodel.dart';
 import './viewmodels/session_viewmodel.dart';
-import 'firebase_options.dart';
-// import './model/user_model.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/dashboard/dashboard_therapist_page.dart'; // Updated import
+import 'screens/auth/register_screen.dart'; // <-- Add this import
+import 'screens/dashboard/dashboard_therapist_page.dart';
 import 'screens/dashboard/dashboard_user_page.dart';
 import 'services/auth/auth_service.dart';
 import 'services/sessions/session_service.dart';
 
-
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -39,22 +37,18 @@ class MyApp extends StatelessWidget {
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<SessionService>(create: (_) => SessionService()),
         ChangeNotifierProxyProvider<AuthService, AuthViewModel>(
-          create:
-              (context) => AuthViewModel(
-                Provider.of<AuthService>(context, listen: false),
-              ),
-          update:
-              (context, authService, previous) =>
-                  previous ?? AuthViewModel(authService),
+          create: (context) => AuthViewModel(
+            Provider.of<AuthService>(context, listen: false),
+          ),
+          update: (context, authService, previous) =>
+          previous ?? AuthViewModel(authService),
         ),
         ChangeNotifierProxyProvider<SessionService, SessionViewModel>(
-          create:
-              (context) => SessionViewModel(
-                Provider.of<SessionService>(context, listen: false),
-              ),
-          update:
-              (context, sessionService, previous) =>
-                  previous ?? SessionViewModel(sessionService),
+          create: (context) => SessionViewModel(
+            Provider.of<SessionService>(context, listen: false),
+          ),
+          update: (context, sessionService, previous) =>
+          previous ?? SessionViewModel(sessionService),
         ),
       ],
       child: MaterialApp(
@@ -65,16 +59,17 @@ class MyApp extends StatelessWidget {
         ),
         initialRoute: '/',
         routes: {
-          '/': (context) => SplashScreen(),
-          '/login': (context) => LoginScreen(),
-          '/forgot-password': (context) => ForgotPasswordScreen(),
-          '/dashboard-user': (context) => DashboardUserPage(),
-          '/dashboard-therapist': (context) => DashboardTherapistPage(), // Updated route
-          '/mood-scale-viewer': (context) => MoodScaleViewerPage(),
-          '/voice-journal': (context) => VoiceJournalPage(),
-          '/mood-chart': (context) => MoodChartPage(),
-          '/journal-reminder': (context) => JournalReminderPage(),
-          '/journal-list': (context) => JournalListScreen(), // <-- ADD THIS ROUTE
+          '/': (context) => const SplashScreen(),
+          '/login': (context) => const LoginScreen(),
+          '/register': (context) => const RegisterScreen(), // <-- Added registration route
+          '/forgot-password': (context) => const ForgotPasswordScreen(),
+          '/dashboard-user': (context) => const DashboardUserPage(),
+          '/dashboard-therapist': (context) => const DashboardTherapistPage(),
+          '/mood-scale-viewer': (context) => const MoodScaleViewerPage(),
+          '/voice-journal': (context) => const VoiceJournalPage(),
+          '/mood-chart': (context) => const MoodChartPage(),
+          '/journal-reminder': (context) => const JournalReminderPage(),
+          '/journal-list': (context) => const JournalListScreen(),
         },
       ),
     );
@@ -109,78 +104,61 @@ class SplashScreenState extends State<SplashScreen> with SingleTickerProviderSta
   }
 
   void checkSession() async {
-    // ViewModel providers
     final sessionViewModel = Provider.of<SessionViewModel>(context, listen: false);
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
 
-    await Future.delayed(const Duration(seconds: 2)); // Simulate loading/splash time
+    await Future.delayed(const Duration(seconds: 2)); // Simulate loading
 
     if (!mounted) return;
 
-    // Check if a session is considered active
     if (await sessionViewModel.isSessionActive()) {
-      // Attempt to load the current user.
-      // Note: AuthViewModel.currentUser is UserModel.
-      // It's crucial that AuthViewModel loads/retains the user profile
-      // if a Firebase session is active upon app restart.
-      final userModel = authViewModel.currentUser; 
+      final userModel = authViewModel.currentUser;
 
       if (userModel != null) {
         final userRole = UserRole.fromString(userModel.userType);
-        // Navigate based on user role
         switch (userRole) {
           case UserRole.therapist:
             Navigator.of(context).pushReplacementNamed('/dashboard-therapist');
             break;
           case UserRole.student:
-          // Add other roles here if they should go to the user dashboard
-          // For example, UserRole.lecturer or UserRole.admin if they use the general user dashboard
             Navigator.of(context).pushReplacementNamed('/dashboard-user');
             break;
           default:
-            // Fallback for unknown or unhandled roles (e.g., admin, lecturer if they don't have specific dashboards yet)
-            // Or if userModel.userType results in UserRole.unknown
-            print("User role '${userModel.userType}' (parsed as ${userRole}) not explicitly handled for dashboard, defaulting to /dashboard-user.");
+            print(
+                "User role '${userModel.userType}' (parsed as $userRole) not explicitly handled for dashboard, defaulting to /dashboard-user.");
             Navigator.of(context).pushReplacementNamed('/dashboard-user');
         }
       } else {
-        // Session is active, but user profile (UserModel) couldn't be loaded from AuthViewModel.
-        // This might indicate an inconsistent state or that AuthViewModel hasn't re-fetched
-        // user details upon app restart. Best to go to login.
         print("Session active but user profile (UserModel from AuthViewModel) is null. Navigating to login.");
-        Navigator.of(context).pushReplacementNamed('/login');
+        Navigator.of(context).pushReplacementNamed('/register');
       }
     } else {
-      // No active session
-      Navigator.of(context).pushReplacementNamed('/login');
+      Navigator.of(context).pushReplacementNamed('/register');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Emoji list for floating effect
     final emojis = ["😀", "😊", "😞", "😐", "😡", "😲", "😴"];
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Gradient background
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Color(0xFFA7B77A), // soft green
-                  Color(0xFFE6E1C5), // cream
-                  Color(0xFFFFDF7F), // yellow
-                  Color(0xFFD6E4FF), // blueish
+                  Color(0xFFA7B77A),
+                  Color(0xFFE6E1C5),
+                  Color(0xFFFFDF7F),
+                  Color(0xFFD6E4FF),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
           ),
-          // Animated mood emojis (floating)
           ...List.generate(emojis.length, (i) {
             final angle = i * 2 * math.pi / emojis.length;
             return AnimatedBuilder(
@@ -202,7 +180,7 @@ class SplashScreenState extends State<SplashScreen> with SingleTickerProviderSta
                           Shadow(
                             blurRadius: 10,
                             color: Colors.brown.withOpacity(0.15),
-                            offset: Offset(3, 6),
+                            offset: const Offset(3, 6),
                           )
                         ],
                       ),
@@ -212,12 +190,10 @@ class SplashScreenState extends State<SplashScreen> with SingleTickerProviderSta
               },
             );
           }),
-          // App logo & title
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // App logo (change as needed, currently an emoji & mood ring)
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -255,7 +231,7 @@ class SplashScreenState extends State<SplashScreen> with SingleTickerProviderSta
                   style: TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Nunito', // or any modern rounded font
+                    fontFamily: 'Nunito',
                     letterSpacing: 1,
                     color: Colors.brown[800],
                     shadows: [

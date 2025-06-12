@@ -1,35 +1,55 @@
-// In your MoodViewModel (viewmodels/mood_viewmodel.dart)
-
-import '../model/mood_model.dart';
+// lib/viewmodels/mood_viewmodel.dart
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../model/mood_model.dart';
+import '../services/mood/mood_service.dart';
 
 class MoodViewModel extends ChangeNotifier {
-  final List<MoodModel> _moods = [];
+  final MoodService _moodService = MoodService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  List<MoodModel> _moods = [];
   List<MoodModel> get moods => _moods;
 
-  void addMood(MoodModel mood) {
-    _moods.add(mood);
-    notifyListeners();
+  MoodViewModel() {
+    final user = _auth.currentUser;
+    if (user != null) {
+      _moodService.moodHistory(user.uid).listen((list) {
+        _moods = list;
+        notifyListeners();
+      });
+    }
   }
 
-  // Get all moods for a specific day
+  Future<void> addMood(MoodModel mood) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Not logged in');
+    await _moodService.addMoodEntry(user.uid, mood);
+  }
+
+  Future<void> deleteMood(String entryId) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Not logged in');
+    await _moodService.deleteMoodEntry(user.uid, entryId);
+  }
+
   List<MoodModel> getMoodsForDay(DateTime day) {
     return _moods.where((m) =>
-    m.date.year == day.year && m.date.month == day.month && m.date.day == day.day
+    m.date.year == day.year &&
+        m.date.month == day.month &&
+        m.date.day == day.day
     ).toList();
   }
 
-  // Get the most frequent (average) mood for that day
   MoodModel? getAverageMoodForDay(DateTime day) {
     final moodsOfDay = getMoodsForDay(day);
     if (moodsOfDay.isEmpty) return null;
-
-    final counts = <String, int>{};
+    final counts = <String,int>{};
     for (var m in moodsOfDay) {
       counts[m.emoji] = (counts[m.emoji] ?? 0) + 1;
     }
-    final mostFrequent = counts.entries.reduce((a, b) => a.value >= b.value ? a : b);
-    return moodsOfDay.firstWhere((m) => m.emoji == mostFrequent.key);
+    final most = counts.entries.reduce((a,b) => a.value>=b.value ? a : b);
+    return moodsOfDay.firstWhere((m)=>m.emoji==most.key);
   }
 }
+

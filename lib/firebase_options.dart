@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'upholder-moodtracker.firebasestorage.app',
     measurementId: 'G-JCBY8K90D3',
   );
+
 }

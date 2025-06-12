@@ -6,7 +6,7 @@ import '../../services/journal/journal_service.dart'; // Added for JournalServic
 import '../../widgets/app_drawer.dart';
 
 class JournalReminderPage extends StatefulWidget {
-  const JournalReminderPage({Key? key}) : super(key: key);
+  const JournalReminderPage({super.key});
 
   @override
   State<JournalReminderPage> createState() => _JournalReminderPageState();

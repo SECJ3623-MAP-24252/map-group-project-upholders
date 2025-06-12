@@ -1,35 +1,20 @@
-import 'package:flutter/material.dart';
+// lib/screens/login_screen.dart
 
-class LoginScreen extends StatefulWidget {
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/auth_viewmodel.dart';
+
+class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
   @override
-  LoginScreenState createState() => LoginScreenState();
-}
-
-class LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  String? _loginError;
-
-  final List<Map<String, String>> _users = [
-    {
-      'email': 'therapist@example.com',
-      'password': 'therapist123',
-      'role': 'therapist',
-    },
-    {
-      'email': 'user@example.com',
-      'password': 'user123',
-      'role': 'user',
-    },
-  ];
-
-  @override
   Widget build(BuildContext context) {
+    final vm = context.watch<AuthViewModel>();
+    final emailController    = TextEditingController();
+    final passwordController = TextEditingController();
+    final _formKey = GlobalKey<FormState>();
+
     return Scaffold(
-      // Remove default appbar, use custom layout instead
       backgroundColor: const Color(0xFFF8F5FF),
       body: Stack(
         children: [
@@ -37,10 +22,7 @@ class LoginScreenState extends State<LoginScreen> {
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFFFEF6E6), // Soft orange
-                  Color(0xFFE2E6FC), // Soft blue/lilac
-                ],
+                colors: [Color(0xFFFEF6E6), Color(0xFFE2E6FC)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -49,129 +31,132 @@ class LoginScreenState extends State<LoginScreen> {
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(28),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // App logo (Replace this with your SVG, PNG or asset)
-                  Container(
-                    width: 90,
-                    height: 90,
-                    margin: const EdgeInsets.only(bottom: 14),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          Color(0xFFA7B77A),
-                          Color(0xFF6EC4E3),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    // Logo & titles...
+                    Container(
+                      width: 90,
+                      height: 90,
+                      margin: const EdgeInsets.only(bottom: 14),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFA7B77A), Color(0xFF6EC4E3)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          "🧠",
+                          style: TextStyle(fontSize: 44, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
-                    child: Center(
-                      child: Text(
-                        "🧠",
-                        style: TextStyle(fontSize: 44, fontWeight: FontWeight.bold),
+                    Text(
+                      'Upholder Mood Tracker',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: Colors.brown[700],
+                        letterSpacing: 1.2,
                       ),
                     ),
-                  ),
-                  // App name
-                  Text(
-                    'Upholder Mood Tracker',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: Colors.brown[700],
-                      letterSpacing: 1.2,
+                    const SizedBox(height: 6),
+                    Text(
+                      'Your daily mental health companion',
+                      style: TextStyle(
+                        color: Colors.brown[300],
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Your daily mental health companion',
-                    style: TextStyle(
-                      color: Colors.brown[300],
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 26),
-                  Card(
-                    elevation: 6,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    color: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                      child: Form(
-                        key: _formKey,
+                    const SizedBox(height: 26),
+
+                    // Card with form fields and buttons
+                    Card(
+                      elevation: 6,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                         child: Column(
                           children: [
-                            if (_loginError != null)
+                            if (vm.errorMessage != null)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
                                 child: Text(
-                                  _loginError!,
-                                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                                  vm.errorMessage!,
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
+
+                            // Email field
                             TextFormField(
-                              controller: _emailController,
+                              controller: emailController,
                               decoration: InputDecoration(
                                 prefixIcon: Icon(Icons.email, color: Colors.brown[200]),
                                 labelText: 'Email',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                               keyboardType: TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your email';
-                                }
-                                return null;
-                              },
+                              validator: (v) =>
+                              (v == null || v.isEmpty) ? 'Please enter your email' : null,
                             ),
                             const SizedBox(height: 18),
+
+                            // Password field
                             TextFormField(
-                              controller: _passwordController,
+                              controller: passwordController,
                               decoration: InputDecoration(
                                 prefixIcon: Icon(Icons.lock, color: Colors.brown[200]),
                                 labelText: 'Password',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                               obscureText: true,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your password';
-                                }
-                                return null;
-                              },
+                              validator: (v) =>
+                              (v == null || v.isEmpty) ? 'Please enter your password' : null,
                             ),
                             const SizedBox(height: 26),
+
+                            // Login button
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: () {
-                                  if (_formKey.currentState!.validate()) {
-                                    final email = _emailController.text.trim();
-                                    final password = _passwordController.text;
-                                    final user = _users.firstWhere(
-                                          (u) => u['email'] == email && u['password'] == password,
-                                      orElse: () => {},
-                                    );
-                                    if (user.isNotEmpty) {
-                                      if (user['role'] == 'therapist') {
-                                        Navigator.pushReplacementNamed(
-                                          context,
-                                          '/dashboard-psychiatrist',
-                                        );
-                                      } else if (user['role'] == 'user') {
-                                        Navigator.pushReplacementNamed(
-                                          context,
-                                          '/dashboard-user',
-                                        );
-                                      }
+                                onPressed: vm.isLoading
+                                    ? null
+                                    : () async {
+                                  if (!_formKey.currentState!.validate()) return;
+
+                                  final success = await vm.signIn(
+                                    emailController.text.trim(),
+                                    passwordController.text,
+                                  );
+
+                                  if (success) {
+                                    // Navigate based on role from currentUser
+                                    final role = vm.currentUser?.userType;
+                                    if (role == 'therapist') {
+                                      Navigator.pushReplacementNamed(
+                                        context,
+                                        '/dashboard-psychiatrist',
+                                      );
                                     } else {
-                                      setState(() {
-                                        _loginError = 'Invalid email or password!';
-                                      });
+                                      Navigator.pushReplacementNamed(
+                                        context,
+                                        '/dashboard-user',
+                                      );
                                     }
                                   }
                                 },
@@ -182,12 +167,18 @@ class LoginScreenState extends State<LoginScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                  textStyle: const TextStyle(
+                                      fontWeight: FontWeight.bold, fontSize: 18),
                                   elevation: 2,
                                 ),
-                                child: const Text('Login'),
+                                child: vm.isLoading
+                                    ? const CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                                )
+                                    : const Text('Login'),
                               ),
                             ),
+
                             const SizedBox(height: 16),
                             TextButton(
                               onPressed: () {
@@ -195,27 +186,35 @@ class LoginScreenState extends State<LoginScreen> {
                               },
                               child: const Text(
                                 'Forgot Password?',
-                                style: TextStyle(color: Color(0xFFA7B77A), fontWeight: FontWeight.w600),
+                                style: TextStyle(
+                                  color: Color(0xFFA7B77A),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/register');
+                              },
+                              child: const Text(
+                                'Registration',
+                                style: TextStyle(
+                                  color: Color(0xFFA7B77A),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
   }
 }
