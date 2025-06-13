@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class NotificationPreferences {
   final bool dailyRemindersEnabled;
   final bool insightNotificationsEnabled;
@@ -13,15 +15,15 @@ class NotificationPreferences {
 
   // Creates a default notification preferences object
   factory NotificationPreferences.defaultSettings() {
-    return const NotificationPreferences(
+    return NotificationPreferences(
       dailyRemindersEnabled: true,
       insightNotificationsEnabled: true,
       moodTrendAlertsEnabled: false,
-      reminderTime: TimeOfDay(hour: 20, minute: 0), // Default to 8 PM
+      reminderTime: const TimeOfDay(hour: 20, minute: 0), // Default to 8 PM
     );
   }
 
-  // Converts the object to a map for storage (e.g., Firebase, SharedPreferences)
+  // Converts the object to a map for storage
   Map<String, dynamic> toMap() {
     return {
       'dailyRemindersEnabled': dailyRemindersEnabled,
@@ -54,8 +56,10 @@ class NotificationPreferences {
   }) {
     return NotificationPreferences(
       dailyRemindersEnabled: dailyRemindersEnabled ?? this.dailyRemindersEnabled,
-      insightNotificationsEnabled: insightNotificationsEnabled ?? this.insightNotificationsEnabled,
-      moodTrendAlertsEnabled: moodTrendAlertsEnabled ?? this.moodTrendAlertsEnabled,
+      insightNotificationsEnabled:
+          insightNotificationsEnabled ?? this.insightNotificationsEnabled,
+      moodTrendAlertsEnabled:
+          moodTrendAlertsEnabled ?? this.moodTrendAlertsEnabled,
       reminderTime: reminderTime ?? this.reminderTime,
     );
   }
