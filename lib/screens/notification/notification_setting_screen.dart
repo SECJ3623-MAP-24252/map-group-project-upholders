@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 class NotificationSettingScreen extends StatefulWidget {
   const NotificationSettingScreen({super.key});
@@ -16,6 +18,12 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
 
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
+  // Constants for daily reminder notification channel
+  static const String _dailyReminderChannelId = 'daily_reminder_channel';
+  static const String _dailyReminderChannelName = 'Daily Reminders';
+  static const String _dailyReminderChannelDescription = 'Notifications for daily mood logging';
+  static const int _dailyReminderNotificationId = 0;
+
   @override
   void initState() {
     super.initState();
@@ -24,6 +32,11 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
   }
 
   Future<void> _initializeNotifications() async {
+    // Initialize timezone data. This is crucial for zonedSchedule.
+    // Ideally, this is done once in your main.dart's main() function.
+    tz_data.initializeTimeZones();
+    // Example: If you need to set a specific default timezone for tz.local:
+    // tz.setLocalLocation(tz.getLocation('America/New_York'));
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     final InitializationSettings initializationSettings = InitializationSettings(
@@ -42,27 +55,31 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
       setState(() {
         _reminderTime = picked;
       });
-      // In a real app, you would save this preference and schedule the notification
+      if (_dailyRemindersEnabled) {
+        // If reminders are on, update the scheduled notification with the new time.
+        _scheduleDailyReminder();
+      }
+      // In a real app, you would also save this preference
     }
   }
 
   Future<void> _scheduleDailyReminder() async {
     if (!_dailyRemindersEnabled) return;
 
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'daily_reminder_channel',
-      'Daily Reminders',
-      channelDescription: 'Notifications for daily mood logging',
+      _dailyReminderChannelId,
+      _dailyReminderChannelName,
+      channelDescription: _dailyReminderChannelDescription,
       importance: Importance.defaultImportance,
       priority: Priority.defaultPriority,
     );
 
-    const NotificationDetails platformChannelSpecifics =
+    final NotificationDetails platformChannelSpecifics =
         NotificationDetails(android: androidPlatformChannelSpecifics);
 
     await _notificationsPlugin.zonedSchedule(
-      0,
+      _dailyReminderNotificationId,
       'How are you feeling today?',
       'Take a moment to log your mood and reflect on your day.',
       _nextInstanceOfTime(_reminderTime),
@@ -139,7 +156,7 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
                       if (value) {
                         _scheduleDailyReminder();
                       } else {
-                        _notificationsPlugin.cancel(0);
+                        _notificationsPlugin.cancel(_dailyReminderNotificationId);
                       }
                     });
                   },
