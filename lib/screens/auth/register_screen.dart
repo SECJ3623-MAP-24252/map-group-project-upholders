@@ -15,7 +15,7 @@ class RegisterScreen extends StatelessWidget {
 }
 
 class _RegisterScreenView extends StatelessWidget {
-  const _RegisterScreenView({super.key});
+  const _RegisterScreenView();
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +54,10 @@ class _RegisterScreenView extends StatelessWidget {
                     child: const Center(
                       child: Text(
                         "🧠",
-                        style: TextStyle(fontSize: 38, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 38,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -71,10 +74,15 @@ class _RegisterScreenView extends StatelessWidget {
                   const SizedBox(height: 18),
                   Card(
                     elevation: 8,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     color: Colors.white,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 28),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 28,
+                      ),
                       child: Column(
                         children: [
                           if (vm.errorMessage != null)
@@ -82,15 +90,23 @@ class _RegisterScreenView extends StatelessWidget {
                               padding: const EdgeInsets.only(bottom: 8),
                               child: Text(
                                 vm.errorMessage!,
-                                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           TextFormField(
                             controller: vm.nameController,
                             decoration: InputDecoration(
-                              prefixIcon: Icon(Icons.person, color: Colors.brown[200]),
+                              prefixIcon: Icon(
+                                Icons.person,
+                                color: Colors.brown[200],
+                              ),
                               labelText: 'Full Name',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             keyboardType: TextInputType.name,
                           ),
@@ -98,9 +114,14 @@ class _RegisterScreenView extends StatelessWidget {
                           TextFormField(
                             controller: vm.emailController,
                             decoration: InputDecoration(
-                              prefixIcon: Icon(Icons.email, color: Colors.brown[200]),
+                              prefixIcon: Icon(
+                                Icons.email,
+                                color: Colors.brown[200],
+                              ),
                               labelText: 'Email',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             keyboardType: TextInputType.emailAddress,
                           ),
@@ -108,9 +129,14 @@ class _RegisterScreenView extends StatelessWidget {
                           TextFormField(
                             controller: vm.passwordController,
                             decoration: InputDecoration(
-                              prefixIcon: Icon(Icons.lock, color: Colors.brown[200]),
+                              prefixIcon: Icon(
+                                Icons.lock,
+                                color: Colors.brown[200],
+                              ),
                               labelText: 'Password',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             obscureText: true,
                           ),
@@ -121,19 +147,26 @@ class _RegisterScreenView extends StatelessWidget {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: vm.isLoading
-                                  ? null
-                                  : () async {
-                                final user = await vm.register();
-                                if (user != null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Registration successful! Please login.'),
-                                    ),
-                                  );
-                                  Navigator.pop(context); // Back to login page
-                                }
-                              },
+                              onPressed:
+                                  vm.isLoading
+                                      ? null
+                                      : () async {
+                                        final user = await vm.register();
+                                        if (user != null) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Registration successful! Please login.',
+                                              ),
+                                            ),
+                                          );
+                                          Navigator.pop(
+                                            context,
+                                          ); // Back to login page
+                                        }
+                                      },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFA7B77A),
                                 foregroundColor: Colors.white,
@@ -141,19 +174,30 @@ class _RegisterScreenView extends StatelessWidget {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                textStyle: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
                                 elevation: 2,
                               ),
-                              child: vm.isLoading
-                                  ? const CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              )
-                                  : const Text('Register'),
+                              child:
+                                  vm.isLoading
+                                      ? const CircularProgressIndicator(
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      )
+                                      : const Text('Register'),
                             ),
                           ),
                           const SizedBox(height: 10),
                           TextButton(
-                            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                            onPressed:
+                                () => Navigator.pushReplacementNamed(
+                                  context,
+                                  '/login',
+                                ),
                             child: const Text(
                               'Already have an account? Login',
                               style: TextStyle(
