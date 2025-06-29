@@ -10,9 +10,9 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<AuthViewModel>();
-    final emailController    = TextEditingController();
+    final emailController = TextEditingController();
     final passwordController = TextEditingController();
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F5FF),
@@ -32,7 +32,7 @@ class LoginScreen extends StatelessWidget {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(28),
               child: Form(
-                key: _formKey,
+                key: formKey,
                 child: Column(
                   children: [
                     // Logo & titles...
@@ -51,7 +51,10 @@ class LoginScreen extends StatelessWidget {
                       child: const Center(
                         child: Text(
                           "🧠",
-                          style: TextStyle(fontSize: 44, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 44,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -83,7 +86,10 @@ class LoginScreen extends StatelessWidget {
                       ),
                       color: Colors.white,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 24,
+                        ),
                         child: Column(
                           children: [
                             if (vm.errorMessage != null)
@@ -102,15 +108,21 @@ class LoginScreen extends StatelessWidget {
                             TextFormField(
                               controller: emailController,
                               decoration: InputDecoration(
-                                prefixIcon: Icon(Icons.email, color: Colors.brown[200]),
+                                prefixIcon: Icon(
+                                  Icons.email,
+                                  color: Colors.brown[200],
+                                ),
                                 labelText: 'Email',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                               keyboardType: TextInputType.emailAddress,
-                              validator: (v) =>
-                              (v == null || v.isEmpty) ? 'Please enter your email' : null,
+                              validator:
+                                  (v) =>
+                                      (v == null || v.isEmpty)
+                                          ? 'Please enter your email'
+                                          : null,
                             ),
                             const SizedBox(height: 18),
 
@@ -118,15 +130,21 @@ class LoginScreen extends StatelessWidget {
                             TextFormField(
                               controller: passwordController,
                               decoration: InputDecoration(
-                                prefixIcon: Icon(Icons.lock, color: Colors.brown[200]),
+                                prefixIcon: Icon(
+                                  Icons.lock,
+                                  color: Colors.brown[200],
+                                ),
                                 labelText: 'Password',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                               obscureText: true,
-                              validator: (v) =>
-                              (v == null || v.isEmpty) ? 'Please enter your password' : null,
+                              validator:
+                                  (v) =>
+                                      (v == null || v.isEmpty)
+                                          ? 'Please enter your password'
+                                          : null,
                             ),
                             const SizedBox(height: 26),
 
@@ -134,32 +152,35 @@ class LoginScreen extends StatelessWidget {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: vm.isLoading
-                                    ? null
-                                    : () async {
-                                  if (!_formKey.currentState!.validate()) return;
+                                onPressed:
+                                    vm.isLoading
+                                        ? null
+                                        : () async {
+                                          if (!formKey.currentState!.validate())
+                                            return;
 
-                                  final success = await vm.signIn(
-                                    emailController.text.trim(),
-                                    passwordController.text,
-                                  );
+                                          final success = await vm.signIn(
+                                            emailController.text.trim(),
+                                            passwordController.text,
+                                          );
 
-                                  if (success) {
-                                    // Navigate based on role from currentUser
-                                    final role = vm.currentUser?.userType;
-                                    if (role == 'therapist') {
-                                      Navigator.pushReplacementNamed(
-                                        context,
-                                        '/dashboard-psychiatrist',
-                                      );
-                                    } else {
-                                      Navigator.pushReplacementNamed(
-                                        context,
-                                        '/dashboard-user',
-                                      );
-                                    }
-                                  }
-                                },
+                                          if (success) {
+                                            // Navigate based on role from currentUser
+                                            final role =
+                                                vm.currentUser?.userType;
+                                            if (role == 'therapist') {
+                                              Navigator.pushReplacementNamed(
+                                                context,
+                                                '/dashboard-psychiatrist',
+                                              );
+                                            } else {
+                                              Navigator.pushReplacementNamed(
+                                                context,
+                                                '/dashboard-user',
+                                              );
+                                            }
+                                          }
+                                        },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFA7B77A),
                                   foregroundColor: Colors.white,
@@ -168,21 +189,29 @@ class LoginScreen extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   textStyle: const TextStyle(
-                                      fontWeight: FontWeight.bold, fontSize: 18),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
                                   elevation: 2,
                                 ),
-                                child: vm.isLoading
-                                    ? const CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation(Colors.white),
-                                )
-                                    : const Text('Login'),
+                                child:
+                                    vm.isLoading
+                                        ? const CircularProgressIndicator(
+                                          valueColor: AlwaysStoppedAnimation(
+                                            Colors.white,
+                                          ),
+                                        )
+                                        : const Text('Login'),
                               ),
                             ),
 
                             const SizedBox(height: 16),
                             TextButton(
                               onPressed: () {
-                                Navigator.pushNamed(context, '/forgot-password');
+                                Navigator.pushNamed(
+                                  context,
+                                  '/forgot-password',
+                                );
                               },
                               child: const Text(
                                 'Forgot Password?',

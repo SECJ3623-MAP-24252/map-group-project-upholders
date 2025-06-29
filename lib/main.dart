@@ -37,18 +37,22 @@ class MyApp extends StatelessWidget {
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<SessionService>(create: (_) => SessionService()),
         ChangeNotifierProxyProvider<AuthService, AuthViewModel>(
-          create: (context) => AuthViewModel(
-            Provider.of<AuthService>(context, listen: false),
-          ),
-          update: (context, authService, previous) =>
-          previous ?? AuthViewModel(authService),
+          create:
+              (context) => AuthViewModel(
+                Provider.of<AuthService>(context, listen: false),
+              ),
+          update:
+              (context, authService, previous) =>
+                  previous ?? AuthViewModel(authService),
         ),
         ChangeNotifierProxyProvider<SessionService, SessionViewModel>(
-          create: (context) => SessionViewModel(
-            Provider.of<SessionService>(context, listen: false),
-          ),
-          update: (context, sessionService, previous) =>
-          previous ?? SessionViewModel(sessionService),
+          create:
+              (context) => SessionViewModel(
+                Provider.of<SessionService>(context, listen: false),
+              ),
+          update:
+              (context, sessionService, previous) =>
+                  previous ?? SessionViewModel(sessionService),
         ),
       ],
       child: MaterialApp(
@@ -61,7 +65,9 @@ class MyApp extends StatelessWidget {
         routes: {
           '/': (context) => const SplashScreen(),
           '/login': (context) => const LoginScreen(),
-          '/register': (context) => const RegisterScreen(), // <-- Added registration route
+          '/register':
+              (context) =>
+                  const RegisterScreen(), // <-- Added registration route
           '/forgot-password': (context) => const ForgotPasswordScreen(),
           '/dashboard-user': (context) => const DashboardUserPage(),
           '/dashboard-therapist': (context) => const DashboardTherapistPage(),
@@ -83,7 +89,8 @@ class SplashScreen extends StatefulWidget {
   SplashScreenState createState() => SplashScreenState();
 }
 
-class SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _emojiController;
 
   @override
@@ -104,7 +111,10 @@ class SplashScreenState extends State<SplashScreen> with SingleTickerProviderSta
   }
 
   void checkSession() async {
-    final sessionViewModel = Provider.of<SessionViewModel>(context, listen: false);
+    final sessionViewModel = Provider.of<SessionViewModel>(
+      context,
+      listen: false,
+    );
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
 
     await Future.delayed(const Duration(seconds: 2)); // Simulate loading
@@ -125,11 +135,14 @@ class SplashScreenState extends State<SplashScreen> with SingleTickerProviderSta
             break;
           default:
             print(
-                "User role '${userModel.userType}' (parsed as $userRole) not explicitly handled for dashboard, defaulting to /dashboard-user.");
+              "User role '${userModel.userType}' (parsed as $userRole) not explicitly handled for dashboard, defaulting to /dashboard-user.",
+            );
             Navigator.of(context).pushReplacementNamed('/dashboard-user');
         }
       } else {
-        print("Session active but user profile (UserModel from AuthViewModel) is null. Navigating to login.");
+        print(
+          "Session active but user profile (UserModel from AuthViewModel) is null. Navigating to login.",
+        );
         Navigator.of(context).pushReplacementNamed('/register');
       }
     } else {
@@ -164,7 +177,9 @@ class SplashScreenState extends State<SplashScreen> with SingleTickerProviderSta
             return AnimatedBuilder(
               animation: _emojiController,
               builder: (context, child) {
-                final radius = 110.0 + 25 * math.sin(_emojiController.value * 2 * math.pi + angle);
+                final radius =
+                    110.0 +
+                    25 * math.sin(_emojiController.value * 2 * math.pi + angle);
                 final dx = 0.45 + 0.45 * math.cos(angle);
                 final dy = 0.45 + 0.35 * math.sin(angle);
                 return Positioned(
@@ -175,13 +190,18 @@ class SplashScreenState extends State<SplashScreen> with SingleTickerProviderSta
                     child: Text(
                       emojis[i],
                       style: TextStyle(
-                        fontSize: 48 + 12 * math.sin(_emojiController.value * 2 * math.pi + angle),
+                        fontSize:
+                            48 +
+                            12 *
+                                math.sin(
+                                  _emojiController.value * 2 * math.pi + angle,
+                                ),
                         shadows: [
                           Shadow(
                             blurRadius: 10,
                             color: Colors.brown.withOpacity(0.15),
                             offset: const Offset(3, 6),
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -213,10 +233,7 @@ class SplashScreenState extends State<SplashScreen> with SingleTickerProviderSta
                   padding: const EdgeInsets.all(28),
                   child: Column(
                     children: const [
-                      Text(
-                        "😊",
-                        style: TextStyle(fontSize: 54),
-                      ),
+                      Text("😊", style: TextStyle(fontSize: 54)),
                       SizedBox(height: 5),
                       Text(
                         "🎤",

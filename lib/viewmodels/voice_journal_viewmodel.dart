@@ -1,12 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:record/record.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
+
 import '../model/voice_journal_entry.dart';
 
 class VoiceJournalViewModel extends ChangeNotifier {
   final AudioRecorder _recorder = AudioRecorder();
   final AudioPlayer _player = AudioPlayer();
+
   bool _isRecording = false;
   bool _isPlaying = false;
   String? _playingPath;
@@ -19,33 +24,46 @@ class VoiceJournalViewModel extends ChangeNotifier {
   String? get playingPath => _playingPath;
 
   Future<void> startRecording() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final filePath = '${dir.path}/journal_${DateTime.now().millisecondsSinceEpoch}.m4a';
-    if (await _recorder.hasPermission()) {
-      await _recorder.start(
-        const RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 128000, sampleRate: 44100),
-        path: filePath,
-      );
-      _isRecording = true;
-      notifyListeners();
+    final micStatus = await Permission.microphone.request();
+    if (micStatus != PermissionStatus.granted) {
+      // Handle denial gracefully
+      return;
     }
+
+    final dir = await getApplicationDocumentsDirectory();
+    final filePath =
+        '${dir.path}/journal_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+    await _recorder.start(
+      const RecordConfig(
+        encoder: AudioEncoder.aacLc,
+        bitRate: 128000,
+        sampleRate: 44100,
+      ),
+      path: filePath,
+    );
+
+    _isRecording = true;
+    notifyListeners();
   }
 
   Future<void> stopRecording() async {
     final path = await _recorder.stop();
+    _isRecording = false;
+
     if (path != null) {
       _history.insert(
         0,
         VoiceJournalEntry(
           filePath: path,
           date: DateTime.now(),
-          emotion: 'Happy', // Dummy
+          emotion: 'Happy', // Placeholder
           transcript: 'Voice-to-text transcript (demo)',
         ),
       );
-      _isRecording = false;
-      notifyListeners();
     }
+
+    notifyListeners();
   }
 
   Future<void> play(String filePath) async {
@@ -54,16 +72,14 @@ class VoiceJournalViewModel extends ChangeNotifier {
       _isPlaying = true;
       _playingPath = filePath;
       notifyListeners();
-      _player.play();
-      _player.playerStateStream.listen((state) {
-        if (state.processingState == ProcessingState.completed) {
-          _isPlaying = false;
-          _playingPath = null;
-          notifyListeners();
-        }
-      });
+
+      await _player.play();
+
+      _isPlaying = false;
+      _playingPath = null;
+      notifyListeners();
     } catch (e) {
-      // handle error if file missing etc
+      // Handle playback error (e.g., file missing)
     }
   }
 
@@ -76,7 +92,6 @@ class VoiceJournalViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _recorder.dispose();
     _player.dispose();
     super.dispose();
   }

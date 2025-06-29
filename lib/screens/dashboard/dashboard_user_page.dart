@@ -213,7 +213,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
     MoodViewModel vm, [
     DateTime? preset,
   ]) {
-    int? selected;
+    _moodNoteController.clear();
 
     showModalBottomSheet(
       context: ctx,
@@ -226,137 +226,158 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
             maxChildSize: 0.8,
             expand: false,
             builder: (context, scrollController) {
-              return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: EdgeInsets.only(
-                    left: 24,
-                    right: 24,
-                    top: 24,
-                    bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
+              // this 'selected' is captured by the StatefulBuilder below
+              int? selected;
+
+              return StatefulBuilder(
+                builder: (c, setModalState) {
+                  return Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(24),
                       ),
-                      const Text(
-                        "How do you feel?",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    ),
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      padding: EdgeInsets.only(
+                        left: 24,
+                        right: 24,
+                        top: 24,
+                        bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
                       ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        children: List.generate(_emojiOptions.length, (i) {
-                          final opt = _emojiOptions[i];
-                          final sel = selected == i;
-                          return GestureDetector(
-                            onTap: () => setState(() => selected = i),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color:
-                                    sel
-                                        ? (opt['color'] as Color).withOpacity(
-                                          .3,
-                                        )
-                                        : Colors.grey[200],
-                                borderRadius: BorderRadius.circular(12),
-                                border:
-                                    sel
-                                        ? Border.all(
-                                          color: opt['color'],
-                                          width: 2,
-                                        )
-                                        : null,
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    opt['emoji'],
-                                    style: const TextStyle(fontSize: 28),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // drag handle
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+
+                          const Text(
+                            "How do you feel?",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // EMOJI GRID
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 8,
+                            children: List.generate(_emojiOptions.length, (i) {
+                              final opt = _emojiOptions[i];
+                              final isSel = selected == i;
+                              return GestureDetector(
+                                onTap: () => setModalState(() => selected = i),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        isSel
+                                            ? (opt['color'] as Color)
+                                                .withOpacity(.3)
+                                            : Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(12),
+                                    border:
+                                        isSel
+                                            ? Border.all(
+                                              color: opt['color'] as Color,
+                                              width: 2,
+                                            )
+                                            : null,
                                   ),
-                                  Text(
-                                    opt['label'],
-                                    style: const TextStyle(fontSize: 12),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        opt['emoji'],
+                                        style: const TextStyle(fontSize: 28),
+                                      ),
+                                      Text(
+                                        opt['label'],
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
+                              );
+                            }),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // OPTIONAL NOTE FIELD
+                          TextField(
+                            controller: _moodNoteController,
+                            decoration: InputDecoration(
+                              labelText: "Note (optional)",
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _moodNoteController,
-                        decoration: InputDecoration(
-                          labelText: "Note (optional)",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            maxLines: 2,
                           ),
-                        ),
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed:
-                            selected == null
-                                ? null
-                                : () async {
-                                  final opt = _emojiOptions[selected!];
-                                  final now = preset ?? DateTime.now();
-                                  final uid =
-                                      FirebaseAuth.instance.currentUser!.uid;
-                                  final newId =
-                                      FirebaseFirestore.instance
-                                          .collection('users')
-                                          .doc(uid)
-                                          .collection('moods')
-                                          .doc()
-                                          .id;
 
-                                  await vm.addMood(
-                                    MoodModel(
-                                      id: newId,
-                                      emoji: opt['emoji'],
-                                      label: opt['label'],
-                                      color: opt['color'],
-                                      note: _moodNoteController.text.trim(),
-                                      date: now,
-                                      imagePath: null,
-                                    ),
-                                  );
+                          const SizedBox(height: 12),
 
-                                  _moodNoteController.clear();
-                                  Navigator.pop(ctx);
-                                },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFA7B77A),
-                          minimumSize: const Size.fromHeight(48),
-                        ),
-                        child: const Text("Add Mood"),
+                          // SUBMIT BUTTON
+                          ElevatedButton(
+                            onPressed:
+                                selected == null
+                                    ? null
+                                    : () async {
+                                      final opt = _emojiOptions[selected!];
+                                      final now = preset ?? DateTime.now();
+                                      final uid =
+                                          FirebaseAuth
+                                              .instance
+                                              .currentUser!
+                                              .uid;
+                                      final newId =
+                                          FirebaseFirestore.instance
+                                              .collection('users')
+                                              .doc(uid)
+                                              .collection('moods')
+                                              .doc()
+                                              .id;
+
+                                      await vm.addMood(
+                                        MoodModel(
+                                          id: newId,
+                                          emoji: opt['emoji'],
+                                          label: opt['label'],
+                                          color: opt['color'],
+                                          note: _moodNoteController.text.trim(),
+                                          date: now,
+                                          imagePath: null,
+                                        ),
+                                      );
+                                      if (!ctx.mounted) return;
+                                      Navigator.pop(ctx);
+                                    },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFA7B77A),
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            child: const Text("Add Mood"),
+                          ),
+
+                          const SizedBox(height: 8),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               );
             },
           ),

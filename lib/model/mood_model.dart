@@ -6,27 +6,30 @@ class MoodModel {
   final String emoji;
   final String label;
   final Color color;
-  final String note;
+  final String? note;
   final DateTime date;
   final String? imagePath;
+  final String? voicePath;
 
   MoodModel({
     required this.id,
     required this.emoji,
     required this.label,
     required this.color,
-    required this.note,
+    this.note,
     required this.date,
     this.imagePath,
+    this.voicePath,
   });
 
   Map<String, dynamic> toMap() => {
     'emoji': emoji,
     'label': label,
     'color': color.value,
-    'note': note,
+    if (note != null) 'note': note,
     'date': Timestamp.fromDate(date),
-    'imagePath': imagePath,
+    if (imagePath != null) 'imagePath': imagePath,
+    if (voicePath != null) 'voicePath': voicePath,
   };
 
   factory MoodModel.fromMap(Map<String, dynamic> map, String docId) {
@@ -35,9 +38,10 @@ class MoodModel {
       emoji: map['emoji'] as String,
       label: map['label'] as String,
       color: Color(map['color'] as int),
-      note: map['note'] as String,
+      note: map['note'] as String?, // now nullable
       date: (map['date'] as Timestamp).toDate(),
       imagePath: map['imagePath'] as String?,
+      voicePath: map['voicePath'] as String?, // new field
     );
   }
 }
