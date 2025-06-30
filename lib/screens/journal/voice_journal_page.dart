@@ -20,23 +20,26 @@ class VoiceJournalPage extends StatelessWidget {
 class _VoiceJournalView extends StatelessWidget {
   const _VoiceJournalView();
 
-
   @override
   Widget build(BuildContext context) {
     return Consumer<VoiceJournalViewModel>(
       builder: (context, vm, _) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Voice Journal', style: TextStyle(color: Colors.brown)),
+            title: const Text(
+              'Voice Journal',
+              style: TextStyle(color: Colors.brown),
+            ),
             backgroundColor: Colors.transparent,
             elevation: 0,
             centerTitle: true,
             iconTheme: const IconThemeData(color: Colors.brown),
             leading: Builder(
-              builder: (context) => IconButton(
-                icon: const Icon(Icons.menu, color: Colors.brown),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
+              builder:
+                  (context) => IconButton(
+                    icon: const Icon(Icons.menu, color: Colors.brown),
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                  ),
             ),
           ),
           drawer: AppDrawer(currentRoute: "/voice-journal"),
@@ -46,7 +49,9 @@ class _VoiceJournalView extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(18.0),
                 child: Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 4,
                   color: Colors.white,
                   child: Padding(
@@ -77,7 +82,10 @@ class _VoiceJournalView extends StatelessWidget {
                             width: vm.isRecording ? 82 : 68,
                             height: vm.isRecording ? 82 : 68,
                             decoration: BoxDecoration(
-                              color: vm.isRecording ? Colors.red[300] : const Color(0xFFA7B77A),
+                              color:
+                                  vm.isRecording
+                                      ? Colors.red[300]
+                                      : const Color(0xFFA7B77A),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
@@ -111,62 +119,97 @@ class _VoiceJournalView extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: vm.history.isEmpty
-                    ? const Center(
-                  child: Text("No voice journals yet. Start recording!", style: TextStyle(color: Colors.grey)),
-                )
-                    : ListView.builder(
-                  itemCount: vm.history.length,
-                  itemBuilder: (context, idx) {
-                    final entry = vm.history[idx];
-                    final isPlayingThis = vm.isPlaying && vm.playingPath == entry.filePath;
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 7, horizontal: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      color: Colors.white,
-                      child: ListTile(
-                        leading: Icon(Icons.mic, color: Color(0xFFA7B77A), size: 36),
-                        title: Text(
-                          DateFormat('EEE, MMM d, yyyy – HH:mm').format(entry.date),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4.0, bottom: 4),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Detected emotion: ${entry.emotion}",
-                                style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.green),
+                child:
+                    vm.history.isEmpty
+                        ? const Center(
+                          child: Text(
+                            "No voice journals yet. Start recording!",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        )
+                        : ListView.builder(
+                          itemCount: vm.history.length,
+                          itemBuilder: (context, idx) {
+                            final entry = vm.history[idx];
+                            final isPlayingThis =
+                                vm.isPlaying &&
+                                vm.playingPath == entry.filePath;
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                vertical: 7,
+                                horizontal: 16,
                               ),
-                              if (entry.transcript != null && entry.transcript!.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: Text(
-                                    "Transcript: ${entry.transcript}",
-                                    style: TextStyle(fontSize: 12, color: Colors.brown[400]),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              color: Colors.white,
+                              child: ListTile(
+                                leading: Icon(
+                                  Icons.mic,
+                                  color: Color(0xFFA7B77A),
+                                  size: 36,
+                                ),
+                                title: Text(
+                                  DateFormat(
+                                    'EEE, MMM d, yyyy – HH:mm',
+                                  ).format(entry.date),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
                                   ),
                                 ),
-                            ],
-                          ),
-                        ),
-                        trailing: IconButton(
-                          icon: Icon(
-                            isPlayingThis ? Icons.stop : Icons.play_arrow,
-                            color: Colors.brown,
-                          ),
-                          onPressed: () async {
-                            if (!isPlayingThis) {
-                              await vm.play(entry.filePath);
-                            } else {
-                              await vm.stopPlayback();
-                            }
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: 4.0,
+                                    bottom: 4,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Detected emotion: ${entry.emotion}",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                      if (entry.transcript != null &&
+                                          entry.transcript!.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 4.0,
+                                          ),
+                                          child: Text(
+                                            "Transcript: ${entry.transcript}",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.brown[400],
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                trailing: IconButton(
+                                  icon: Icon(
+                                    isPlayingThis
+                                        ? Icons.stop
+                                        : Icons.play_arrow,
+                                    color: Colors.brown,
+                                  ),
+                                  onPressed: () async {
+                                    if (!isPlayingThis) {
+                                      await vm.play(entry.filePath);
+                                    } else {
+                                      await vm.stopPlayback();
+                                    }
+                                  },
+                                ),
+                              ),
+                            );
                           },
                         ),
-                      ),
-                    );
-                  },
-                ),
               ),
               const SizedBox(height: 15),
             ],

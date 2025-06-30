@@ -1,263 +1,480 @@
+// lib/screens/mood_tracking/mood_chart_page.dart
+
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:map_upholders/widgets/app_drawer.dart';
+
+import '../../viewmodels/mood_viewmodel.dart';
+import '../../widgets/app_drawer.dart';
+
+enum _ChartRange { week, month, year }
 
 class MoodChartPage extends StatelessWidget {
   const MoodChartPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAF3E3),
-      appBar: AppBar(
-        title: const Text("Mood Fluctuation Chart"),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        foregroundColor: Colors.black,
+    return DefaultTabController(
+      length: _ChartRange.values.length,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFAF3E3),
+        appBar: AppBar(
+          title: const Text("Mood Trends"),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          foregroundColor: Colors.brown,
+          bottom: TabBar(
+            labelColor: Colors.brown,
+            unselectedLabelColor: Colors.brown.shade300,
+            indicatorColor: Colors.brown[300],
+            tabs: const [
+              Tab(text: "Week"),
+              Tab(text: "Month"),
+              Tab(text: "Year"),
+            ],
+          ),
+        ),
+        drawer: const AppDrawer(currentRoute: "/mood-chart"),
+        body: TabBarView(
+          children:
+              _ChartRange.values.map((range) {
+                return _MoodChartRange(range: range);
+              }).toList(),
+        ),
       ),
-      body: const _MoodChartBody(),
-      drawer: AppDrawer(currentRoute: "/mood-chart"),
     );
   }
 }
 
-class _MoodChartBody extends StatelessWidget {
-  const _MoodChartBody();
-
-  // Dummy mood data (0=sad, 10=super happy)
-  List<double> get moodPoints => [4, 6, 5, 8, 3, 9, 7, 5, 6, 8, 6, 10, 7, 5, 4];
-
-  List<String> get dateLabels => [
-    "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26"
-  ];
+class _MoodChartRange extends StatelessWidget {
+  final _ChartRange range;
+  const _MoodChartRange({required this.range});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    return Consumer<MoodViewModel>(
+      builder: (_, vm, __) {
+        final now = DateTime.now();
+        final all = vm.moods;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: _AnimatedHeadline(),
-        ),
-        const SizedBox(height: 20),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 12.0),
-            child: _MoodCard(
-              child: _buildChart(context),
+        // 1) Build buckets & labels
+        late List<DateTime> buckets;
+        late List<String> labels;
+        switch (range) {
+          case _ChartRange.week:
+            buckets = List.generate(
+              7,
+              (i) => DateTime(
+                now.year,
+                now.month,
+                now.day,
+              ).subtract(Duration(days: 6 - i)),
+            );
+            labels = buckets.map((d) => d.day.toString()).toList();
+            break;
+          case _ChartRange.month:
+            buckets = List.generate(
+              30,
+              (i) => DateTime(
+                now.year,
+                now.month,
+                now.day,
+              ).subtract(Duration(days: 29 - i)),
+            );
+            labels = List.generate(30, (i) {
+              final d = buckets[i];
+              return (i % 5 == 0) ? d.day.toString() : "";
+            });
+            break;
+          case _ChartRange.year:
+            buckets = List.generate(12, (i) {
+              final m = now.month - 11 + i;
+              final y = now.year + (m <= 0 ? -1 : 0);
+              final mm = (m - 1) % 12 + 1;
+              return DateTime(y, mm, 1);
+            });
+            labels =
+                buckets
+                    .map(
+                      (d) =>
+                          [
+                            "Jan",
+                            "Feb",
+                            "Mar",
+                            "Apr",
+                            "May",
+                            "Jun",
+                            "Jul",
+                            "Aug",
+                            "Sep",
+                            "Oct",
+                            "Nov",
+                            "Dec",
+                          ][d.month - 1],
+                    )
+                    .toList();
+            break;
+        }
+
+        // 2) Helper to map label → numeric score
+        int _scoreOf(String label) {
+          switch (label.toLowerCase()) {
+            case "angry":
+              return 1;
+            case "sad":
+              return 2;
+            case "neutral":
+              return 3;
+            case "happy":
+              return 4;
+            case "grateful":
+            case "very happy":
+              return 5;
+            default:
+              return 3;
+          }
+        }
+
+        // 3) Compute averages for each bucket
+        final spots = <FlSpot>[];
+        final barData = <double>[];
+        for (var i = 0; i < buckets.length; i++) {
+          final start = buckets[i];
+          final end =
+              range == _ChartRange.year
+                  ? DateTime(start.year, start.month + 1, 1)
+                  : start.add(const Duration(days: 1));
+          final slice =
+              all.where((m) {
+                final d = m.date;
+                return !d.isBefore(start) && d.isBefore(end);
+              }).toList();
+
+          double avg = 0;
+          if (slice.isNotEmpty) {
+            avg =
+                slice
+                    .map((m) => _scoreOf(m.label).toDouble())
+                    .reduce((a, b) => a + b) /
+                slice.length;
+          }
+          spots.add(FlSpot(i.toDouble(), avg));
+          barData.add(avg);
+        }
+
+        // 4) Summary data
+        final double avgAll =
+            barData.isEmpty
+                ? 0
+                : barData.reduce((a, b) => a + b) / barData.length;
+        final double highAll = barData.isEmpty ? 0 : barData.reduce(max);
+        final double lowAll = barData.isEmpty ? 0 : barData.reduce(min);
+
+        // 5) Build
+        return ListView(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+          children: [
+            // SUMMARY BOX
+            Card(
+              elevation: 8,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              color: const Color(0xFFECF7E6),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 28,
+                  horizontal: 18,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _summaryItem(
+                      "Average",
+                      avgAll.toStringAsFixed(2),
+                      Icons.emoji_emotions,
+                      Colors.brown[600]!,
+                    ),
+                    _summaryItem(
+                      "Highest",
+                      highAll.toStringAsFixed(2),
+                      Icons.trending_up,
+                      Colors.green[400]!,
+                    ),
+                    _summaryItem(
+                      "Lowest",
+                      lowAll.toStringAsFixed(2),
+                      Icons.trending_down,
+                      Colors.red[300]!,
+                    ),
+                  ],
+                ),
+              ),
             ),
+            const SizedBox(height: 26),
+
+            // TABS SELECTED (already above), just spacing
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Chip(
+                  label: Text(
+                    range == _ChartRange.week
+                        ? "Week"
+                        : range == _ChartRange.month
+                        ? "Month"
+                        : "Year",
+                    style: const TextStyle(
+                      color: Colors.brown,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  backgroundColor: const Color(0xFFE6E1C5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 3,
+                  ),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // ANIMATED BAR CHART
+            _AnimatedMoodBarChart(data: barData, maxScore: 5, labels: labels),
+
+            const SizedBox(height: 34),
+
+            // ANIMATED LINE CHART
+            _AnimatedMoodLineChart(spots: spots, labels: labels, range: range),
+
+            const SizedBox(height: 30),
+
+            // --- Summarize AI section placeholder ---
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Summarize AI",
+                    style: TextStyle(
+                      color: Colors.blueGrey[900],
+                      fontSize: 19,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.blueGrey[50],
+                    ),
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    child: Text(
+                      "AI-generated mood summary coming soon...",
+                      style: TextStyle(
+                        color: Colors.blueGrey[300],
+                        fontStyle: FontStyle.italic,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _summaryItem(String label, String value, IconData icon, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 30),
+        const SizedBox(height: 5),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 19,
+            fontWeight: FontWeight.bold,
+            color: Colors.brown[800],
+            letterSpacing: 1.0,
           ),
         ),
-        const _MotivationalBanner(),
-        const SizedBox(height: 18),
+        Text(label, style: const TextStyle(color: Colors.brown, fontSize: 14)),
       ],
     );
   }
+}
 
-  Widget _buildChart(BuildContext context) {
-    return LineChart(
-      LineChartData(
-        minY: 0,
-        maxY: 10,
-        titlesData: FlTitlesData(
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, _) {
-                return Text(
-                  value.toInt().toString(),
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
-                );
-              },
-              interval: 2,
-              reservedSize: 30,
-            ),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              interval: 2,
-              getTitlesWidget: (value, _) {
-                int idx = value.toInt();
-                if (idx < 0 || idx >= dateLabels.length) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    dateLabels[idx],
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+// ────────────── Animated Bar Chart Widget ──────────────
+class _AnimatedMoodBarChart extends StatelessWidget {
+  final List<double> data;
+  final int maxScore;
+  final List<String> labels;
+
+  const _AnimatedMoodBarChart({
+    required this.data,
+    required this.maxScore,
+    required this.labels,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const double maxBarHeight = 110;
+    return SizedBox(
+      height: maxBarHeight + 42,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: List.generate(data.length, (i) {
+          final score = data[i];
+          final barHeight = (score / maxScore) * maxBarHeight;
+          final color = _barColor(score);
+          return Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                AnimatedContainer(
+                  duration: Duration(milliseconds: 700 + Random().nextInt(250)),
+                  curve: Curves.easeInOutCubic,
+                  height: barHeight,
+                  constraints: const BoxConstraints(maxHeight: maxBarHeight),
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withOpacity(0.22),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
-          ),
-        ),
-        gridData: FlGridData(
-          show: true,
-          drawHorizontalLine: true,
-          horizontalInterval: 2,
-          getDrawingHorizontalLine: (value) => FlLine(
-            color: Colors.white24,
-            strokeWidth: 1,
-          ),
-        ),
-        lineBarsData: [
-          LineChartBarData(
-            spots: List.generate(
-              moodPoints.length,
-                  (index) => FlSpot(index.toDouble(), moodPoints[index]),
-            ),
-            isCurved: true,
-            color: const Color(0xFF9D4EDD),
-            barWidth: 4,
-            dotData: FlDotData(show: true),
-            belowBarData: BarAreaData(
-              show: true,
-              gradient: LinearGradient(
-                colors: [
-                  // Replacing withOpacity with fromRGBO for future-proofing
-                  const Color.fromRGBO(157, 78, 221, 0.35),
-                  const Color.fromRGBO(34, 34, 59, 0.0),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
-        ],
-        borderData: FlBorderData(show: false),
-      ),
-      // Remove swapAnimationDuration and swapAnimationCurve
-    );
-  }
-
-}
-
-class _MoodCard extends StatelessWidget {
-  final Widget child;
-  const _MoodCard({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 700),
-      curve: Curves.easeInOut,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFAF3E3), Color(0xFFFAF3E3)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.23),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(18),
-      child: child,
-    );
-  }
-}
-
-class _AnimatedHeadline extends StatefulWidget {
-  const _AnimatedHeadline();
-
-  @override
-  State<_AnimatedHeadline> createState() => _AnimatedHeadlineState();
-}
-
-class _AnimatedHeadlineState extends State<_AnimatedHeadline>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..forward();
-    _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnim,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Your Mood Trends",
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "See how your emotions have fluctuated over the last 2 weeks.",
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MotivationalBanner extends StatelessWidget {
-  const _MotivationalBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF43E97B), Color(0xFF38F9D7)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.emoji_emotions, color: Colors.yellow, size: 28),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                "No matter how you feel, remember: every emotion is valid. Track your journey and celebrate your progress!",
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  height: 1.3,
+                  child: Center(
+                    child: Text(
+                      score > 0 ? score.toStringAsFixed(1) : "",
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
-                textAlign: TextAlign.center,
+                const SizedBox(height: 5),
+                Text(
+                  labels[i],
+                  style: TextStyle(
+                    color: Colors.brown[300],
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Color _barColor(double score) {
+    if (score <= 1) return Colors.red[200]!;
+    if (score <= 2) return Colors.orange[200]!;
+    if (score <= 3) return Colors.yellow[300]!;
+    if (score <= 4) return Colors.lightGreen[300]!;
+    return Colors.blue[200]!;
+  }
+}
+
+// ────────────── Animated Line Chart Widget ──────────────
+class _AnimatedMoodLineChart extends StatelessWidget {
+  final List<FlSpot> spots;
+  final List<String> labels;
+  final _ChartRange range;
+
+  const _AnimatedMoodLineChart({
+    required this.spots,
+    required this.labels,
+    required this.range,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 180,
+      child: LineChart(
+        LineChartData(
+          minX: 0.0,
+          maxX: (spots.length - 1).toDouble(),
+          minY: 0.0,
+          maxY: 5.0,
+          gridData: FlGridData(
+            show: true,
+            horizontalInterval: 1.0,
+            getDrawingHorizontalLine:
+                (y) => FlLine(color: Colors.grey.shade300, strokeWidth: 1.0),
+          ),
+          titlesData: FlTitlesData(
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: 1.0,
+                reservedSize: 30.0,
+                getTitlesWidget:
+                    (v, _) => Text(
+                      v.toInt().toString(),
+                      style: TextStyle(
+                        color: Colors.brown.shade400,
+                        fontSize: 12.0,
+                      ),
+                    ),
               ),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: 1.0,
+                getTitlesWidget: (v, _) {
+                  final idx = v.toInt();
+                  if (idx < 0 || idx >= labels.length) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6.0),
+                    child: Text(
+                      labels[idx],
+                      style: TextStyle(
+                        color: Colors.brown.shade400,
+                        fontSize: 12.0,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              barWidth: 4.0,
+              dotData: FlDotData(show: true),
+              belowBarData: BarAreaData(
+                show: true,
+                color: Colors.blueAccent.withOpacity(0.3),
+              ),
+              color: Colors.blueAccent,
             ),
           ],
         ),

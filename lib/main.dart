@@ -1,25 +1,29 @@
-import 'dart:math' as math;
+// lib/main.dart
 
+import 'dart:math' as math;
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:flutter/material.dart';
-import 'package:map_upholders/screens/journal/journal_list_screen.dart';
-import 'package:map_upholders/screens/journal/journal_reminder_page.dart';
-import 'package:map_upholders/screens/journal/voice_journal_page.dart';
-import 'package:map_upholders/screens/mood_tracking/mood_chart_page.dart';
-import 'package:map_upholders/screens/mood_tracking/mood_scale_viewer_page.dart';
-
 import 'package:provider/provider.dart';
-import './model/auth_models.dart'; // For UserRole enum
+
+import './services/auth/auth_service.dart';
+import './services/sessions/session_service.dart';
 import './viewmodels/auth_viewmodel.dart';
 import './viewmodels/session_viewmodel.dart';
-import 'screens/auth/forgot_password_screen.dart';
+import './viewmodels/mood_viewmodel.dart';
+
 import 'screens/auth/login_screen.dart';
-import 'screens/auth/register_screen.dart'; // <-- Add this import
-import 'screens/dashboard/dashboard_therapist_page.dart';
+import 'screens/auth/register_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
 import 'screens/dashboard/dashboard_user_page.dart';
-import 'services/auth/auth_service.dart';
-import 'services/sessions/session_service.dart';
+import 'screens/dashboard/dashboard_therapist_page.dart';
+import 'screens/journal/journal_list_screen.dart';
+import 'screens/journal/journal_reminder_page.dart';
+import 'screens/journal/voice_journal_page.dart';
+import 'screens/mood_tracking/mood_scale_viewer_page.dart';
+import 'screens/mood_tracking/mood_chart_page.dart';
+
+import './model/auth_models.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,26 +38,20 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // raw services
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<SessionService>(create: (_) => SessionService()),
-        ChangeNotifierProxyProvider<AuthService, AuthViewModel>(
-          create:
-              (context) => AuthViewModel(
-                Provider.of<AuthService>(context, listen: false),
-              ),
-          update:
-              (context, authService, previous) =>
-                  previous ?? AuthViewModel(authService),
+
+        // view-models (no Proxy, just plain Create)
+        ChangeNotifierProvider<AuthViewModel>(
+          create: (ctx) => AuthViewModel(ctx.read<AuthService>()),
         ),
-        ChangeNotifierProxyProvider<SessionService, SessionViewModel>(
-          create:
-              (context) => SessionViewModel(
-                Provider.of<SessionService>(context, listen: false),
-              ),
-          update:
-              (context, sessionService, previous) =>
-                  previous ?? SessionViewModel(sessionService),
+        ChangeNotifierProvider<SessionViewModel>(
+          create: (ctx) => SessionViewModel(ctx.read<SessionService>()),
         ),
+
+        // Your shared MoodViewModel
+        ChangeNotifierProvider<MoodViewModel>(create: (_) => MoodViewModel()),
       ],
       child: MaterialApp(
         title: 'Mood Tracker App',
@@ -63,24 +61,24 @@ class MyApp extends StatelessWidget {
         ),
         initialRoute: '/',
         routes: {
-          '/': (context) => const SplashScreen(),
-          '/login': (context) => const LoginScreen(),
-          '/register':
-              (context) =>
-                  const RegisterScreen(), // <-- Added registration route
-          '/forgot-password': (context) => const ForgotPasswordScreen(),
-          '/dashboard-user': (context) => const DashboardUserPage(),
-          '/dashboard-therapist': (context) => const DashboardTherapistPage(),
-          '/mood-scale-viewer': (context) => const MoodScaleViewerPage(),
-          '/voice-journal': (context) => const VoiceJournalPage(),
-          '/mood-chart': (context) => const MoodChartPage(),
-          '/journal-reminder': (context) => const JournalReminderPage(),
-          '/journal-list': (context) => const JournalListScreen(),
+          '/': (c) => const SplashScreen(),
+          '/login': (c) => const LoginScreen(),
+          '/register': (c) => const RegisterScreen(),
+          '/forgot-password': (c) => const ForgotPasswordScreen(),
+          '/dashboard-user': (c) => const DashboardUserPage(),
+          '/dashboard-therapist': (c) => const DashboardTherapistPage(),
+          '/mood-scale-viewer': (c) => const MoodScaleViewerPage(),
+          '/voice-journal': (c) => const VoiceJournalPage(),
+          '/mood-chart': (c) => const MoodChartPage(),
+          '/journal-reminder': (c) => const JournalReminderPage(),
+          '/journal-list': (c) => const JournalListScreen(),
         },
       ),
     );
   }
 }
+
+// … SplashScreen implementation remains unchanged …
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

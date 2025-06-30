@@ -58,56 +58,59 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
       source: ImageSource.camera,
       preferredCameraDevice: CameraDevice.front,
     );
-    if (file != null) {
-      final uid = FirebaseAuth.instance.currentUser!.uid;
-      final newId =
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('moods')
-              .doc()
-              .id;
+    if (file == null) return;
 
-      await vm.addMood(
-        MoodModel(
-          id: newId,
-          emoji: "😀",
-          label: "Happy",
-          color: const Color(0xFF72BF69),
-          note: "Photo mood detected: Happy",
-          date: DateTime.now(),
-          imagePath: file.path,
-        ),
-      );
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final newId =
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('moods')
+            .doc()
+            .id;
 
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder:
-            (_) => AlertDialog(
-              title: const Text('Picture Taken'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.file(
-                    File(file.path),
-                    height: 120,
-                    width: 120,
-                    fit: BoxFit.cover,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('Dummy result: Happy 😊'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
+    await vm.addMood(
+      MoodModel(
+        id: newId,
+        emoji: "😀",
+        label: "Happy",
+        color: const Color(0xFF72BF69),
+        note: "Photo mood detected: Happy",
+        date: DateTime.now(),
+        imagePath: file.path,
+      ),
+    );
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Picture Taken'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.file(
+                  File(file.path),
+                  height: 120,
+                  width: 120,
+                  fit: BoxFit.cover,
                 ),
+                const SizedBox(height: 8),
+                const Text('Dummy result: Happy 😊'),
               ],
             ),
-      );
-    }
+            actions: [
+              TextButton(
+                onPressed: () {
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+    );
   }
 
   void _showDayDetailDialog(BuildContext ctx, MoodViewModel vm, DateTime day) {
@@ -168,11 +171,28 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                                       child: Text(e.emoji),
                                     ),
                             title: Text(e.label),
-                            subtitle: Text(DateFormat.jm().format(e.date)),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(DateFormat.jm().format(e.date)),
+                                if (e.note != null && e.note!.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      e.note!,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                             trailing: IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               onPressed: () async {
                                 await vm.deleteMood(e.id);
+                                if (!ctx.mounted) return;
                                 Navigator.pop(ctx);
                                 _showDayDetailDialog(ctx, vm, day);
                               },
@@ -226,9 +246,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
             maxChildSize: 0.8,
             expand: false,
             builder: (context, scrollController) {
-              // this 'selected' is captured by the StatefulBuilder below
               int? selected;
-
               return StatefulBuilder(
                 builder: (c, setModalState) {
                   return Container(
@@ -249,7 +267,6 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // drag handle
                           Container(
                             margin: const EdgeInsets.only(bottom: 12),
                             width: 40,
@@ -259,7 +276,6 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-
                           const Text(
                             "How do you feel?",
                             style: TextStyle(
@@ -268,8 +284,6 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                             ),
                           ),
                           const SizedBox(height: 12),
-
-                          // EMOJI GRID
                           Wrap(
                             spacing: 12,
                             runSpacing: 8,
@@ -313,10 +327,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                               );
                             }),
                           ),
-
                           const SizedBox(height: 12),
-
-                          // OPTIONAL NOTE FIELD
                           TextField(
                             controller: _moodNoteController,
                             decoration: InputDecoration(
@@ -327,10 +338,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                             ),
                             maxLines: 2,
                           ),
-
                           const SizedBox(height: 12),
-
-                          // SUBMIT BUTTON
                           ElevatedButton(
                             onPressed:
                                 selected == null
@@ -371,7 +379,6 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                             ),
                             child: const Text("Add Mood"),
                           ),
-
                           const SizedBox(height: 8),
                         ],
                       ),
@@ -397,8 +404,6 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
             iconTheme: const IconThemeData(color: Colors.brown),
           ),
           drawer: const AppDrawer(currentRoute: '/dashboard-user'),
-
-          // Entire page scrolls as a ListView
           body: ListView(
             padding: const EdgeInsets.fromLTRB(8, 16, 8, 100),
             children: [
@@ -410,8 +415,6 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                 ),
               ),
               const SizedBox(height: 8),
-
-              // Calendar in white Card
               Card(
                 color: Colors.white,
                 margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -501,15 +504,12 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 8),
               const Text(
                 "Recent History",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-
-              // Show all entries in a single scrollable list
               ...vm.moods.map((e) {
                 return Card(
                   margin: const EdgeInsets.symmetric(vertical: 4),
@@ -524,7 +524,23 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                               child: Text(e.emoji),
                             ),
                     title: Text(e.label),
-                    subtitle: Text(DateFormat.yMMMd().add_jm().format(e.date)),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(DateFormat.yMMMd().add_jm().format(e.date)),
+                        if (e.note != null && e.note!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              e.note!,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () => vm.deleteMood(e.id),
@@ -534,8 +550,6 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
               }),
             ],
           ),
-
-          // FABs: Add, Camera, Voice
           floatingActionButton: Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Row(
