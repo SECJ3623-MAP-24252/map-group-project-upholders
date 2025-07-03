@@ -4,7 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
-
+import '../../utils/mood_pdf_export.dart'; // <-- adjust if you put it elsewhere
+import '../../model/mood_model.dart';
 import '../../viewmodels/mood_viewmodel.dart';
 import '../../widgets/app_drawer.dart';
 
@@ -176,6 +177,46 @@ class _MoodChartRange extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
           children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('Export to PDF'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.brown[400],
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 8,
+                  ),
+                ),
+                onPressed: () async {
+                  // Use only scores & labels from the current chart period!
+                  // (barData and labels already represent what's displayed)
+                  final periodLabel =
+                      range == _ChartRange.week
+                          ? "This Week"
+                          : range == _ChartRange.month
+                          ? "This Month"
+                          : "This Year";
+                  final pdf = await MoodPdfExport.generateMoodChartReport(
+                    barData,
+                    labels: labels,
+                    title: "Mood Chart Report",
+                    periodLabel: periodLabel,
+                  );
+                  await MoodPdfExport.saveAndSharePdf(
+                    pdf,
+                    fileName: "mood_chart_${range.name}.pdf",
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
+
             // SUMMARY BOX
             Card(
               elevation: 8,
@@ -317,8 +358,7 @@ class _MoodChartRange extends StatelessWidget {
   }
 }
 
-// ────────────── Animated Bar Chart Widget ──────────────
-class _AnimatedMoodBarChart extends StatelessWidget {
+class _AnimatedMoodBarChart extends StatefulWidget {
   final List<double> data;
   final int maxScore;
   final List<String> labels;
@@ -330,17 +370,34 @@ class _AnimatedMoodBarChart extends StatelessWidget {
   });
 
   @override
+  State<_AnimatedMoodBarChart> createState() => _AnimatedMoodBarChartState();
+}
+
+class _AnimatedMoodBarChartState extends State<_AnimatedMoodBarChart> {
+  @override
   Widget build(BuildContext context) {
+    final double chartWidth = min(MediaQuery.of(context).size.width - 40, 350);
     const double maxBarHeight = 110;
+    final int n = widget.data.length;
+    final double barSpacing = 2.0;
+    final double barWidth = (chartWidth - n * barSpacing * 2) / n;
+
+    // Detect if it's the "monthly" range by checking n==30 (or use labels.length==30)
+    final bool isMonthly = n == 30;
+
     return SizedBox(
+      width: chartWidth,
       height: maxBarHeight + 42,
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(data.length, (i) {
-          final score = data[i];
-          final barHeight = (score / maxScore) * maxBarHeight;
+        children: List.generate(widget.data.length, (i) {
+          final score = widget.data[i];
+          final barHeight = (score / widget.maxScore) * maxBarHeight;
           final color = _barColor(score);
-          return Expanded(
+          return Container(
+            width: barWidth,
+            margin: EdgeInsets.symmetric(horizontal: barSpacing),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -363,22 +420,24 @@ class _AnimatedMoodBarChart extends StatelessWidget {
                   child: Center(
                     child: Text(
                       score > 0 ? score.toStringAsFixed(1) : "",
-                      style: const TextStyle(
-                        fontSize: 15,
+                      style: TextStyle(
+                        fontSize: isMonthly ? 11 : 15,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  labels[i],
-                  style: TextStyle(
-                    color: Colors.brown[300],
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
+                SizedBox(height: isMonthly ? 2 : 5),
+                widget.labels[i].isNotEmpty
+                    ? Text(
+                      widget.labels[i],
+                      style: TextStyle(
+                        color: Colors.brown[400],
+                        fontWeight: FontWeight.bold,
+                        fontSize: isMonthly ? 10 : 12,
+                      ),
+                    )
+                    : const SizedBox.shrink(),
               ],
             ),
           );
@@ -396,7 +455,6 @@ class _AnimatedMoodBarChart extends StatelessWidget {
   }
 }
 
-// ────────────── Animated Line Chart Widget ──────────────
 class _AnimatedMoodLineChart extends StatelessWidget {
   final List<FlSpot> spots;
   final List<String> labels;
@@ -410,73 +468,93 @@ class _AnimatedMoodLineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 180,
-      child: LineChart(
-        LineChartData(
-          minX: 0.0,
-          maxX: (spots.length - 1).toDouble(),
-          minY: 0.0,
-          maxY: 5.0,
-          gridData: FlGridData(
-            show: true,
-            horizontalInterval: 1.0,
-            getDrawingHorizontalLine:
-                (y) => FlLine(color: Colors.grey.shade300, strokeWidth: 1.0),
-          ),
-          titlesData: FlTitlesData(
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 1.0,
-                reservedSize: 30.0,
-                getTitlesWidget:
-                    (v, _) => Text(
-                      v.toInt().toString(),
-                      style: TextStyle(
-                        color: Colors.brown.shade400,
-                        fontSize: 12.0,
-                      ),
-                    ),
-              ),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 1.0,
-                getTitlesWidget: (v, _) {
-                  final idx = v.toInt();
-                  if (idx < 0 || idx >= labels.length) {
-                    return const SizedBox.shrink();
-                  }
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 6.0),
-                    child: Text(
-                      labels[idx],
-                      style: TextStyle(
-                        color: Colors.brown.shade400,
-                        fontSize: 12.0,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-          borderData: FlBorderData(show: false),
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              isCurved: true,
-              barWidth: 4.0,
-              dotData: FlDotData(show: true),
-              belowBarData: BarAreaData(
+    // Fixed chart width as used in bar chart
+    final double chartWidth = min(MediaQuery.of(context).size.width - 40, 350);
+
+    // Prevent disappearing if no spots (show placeholder chart)
+    final List<FlSpot> chartSpots =
+        spots.isEmpty ? [FlSpot(0, 0), FlSpot(1, 0)] : spots;
+
+    return Center(
+      child: SizedBox(
+        width: chartWidth,
+        height: 180,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 0),
+          child: LineChart(
+            LineChartData(
+              minX: 0,
+              maxX: (chartSpots.length - 1).toDouble(),
+              minY: 0,
+              maxY: 5,
+              gridData: FlGridData(
                 show: true,
-                color: Colors.blueAccent.withOpacity(0.3),
+                horizontalInterval: 1,
+                getDrawingHorizontalLine:
+                    (y) => FlLine(color: Colors.grey.shade300, strokeWidth: 1),
               ),
-              color: Colors.blueAccent,
+              titlesData: FlTitlesData(
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: 1,
+                    reservedSize: 30,
+                    getTitlesWidget:
+                        (v, _) => Text(
+                          v.toInt().toString(),
+                          style: TextStyle(
+                            color: Colors.brown.shade400,
+                            fontSize: 12,
+                          ),
+                        ),
+                  ),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: 1,
+                    getTitlesWidget: (v, _) {
+                      final idx = v.toInt();
+                      if (idx < 0 || idx >= labels.length) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 6.0),
+                        child: Text(
+                          labels[idx],
+                          style: TextStyle(
+                            color: Colors.brown.shade400,
+                            fontSize: 12,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                topTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+              ),
+              borderData: FlBorderData(show: false),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: chartSpots,
+                  isCurved: true,
+                  barWidth: 4,
+                  dotData: FlDotData(show: true),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    color: Colors.blueAccent.withOpacity(0.3),
+                  ),
+                  color: Colors.blueAccent,
+                ),
+              ],
+              clipData: FlClipData.none(),
             ),
-          ],
+          ),
         ),
       ),
     );

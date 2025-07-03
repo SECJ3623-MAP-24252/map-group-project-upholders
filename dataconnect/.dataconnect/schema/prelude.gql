@@ -608,20 +608,6 @@ type _Doc {
   markdown: String!
 }
 
-"(Internal) Added to things that may be removed from FDC and will soon be no longer usable in schema or operations."
-directive @fdc_deprecated(reason: String = "No longer supported") on
-  | SCHEMA
-  | SCALAR
-  | OBJECT
-  | FIELD_DEFINITION
-  | ARGUMENT_DEFINITION
-  | INTERFACE
-  | UNION
-  | ENUM
-  | ENUM_VALUE
-  | INPUT_OBJECT
-  | INPUT_FIELD_DEFINITION
-
 "(Internal) Added to scalars representing quoted CEL expressions."
 directive @fdc_celExpression(
   "The expected CEL type that the expression should evaluate to."
@@ -655,6 +641,15 @@ directive @fdc_oneOf(
   "If true, exactly one field / argument in the group must be specified."
   required: Boolean! = false
 ) repeatable on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
+
+"""
+The `_Metadata` type is used to return metadata about a field in a response.
+"""
+type _Metadata {
+  # During vector similarity search, the distance between the query vector and
+  # this row's vector. In other cases, this field is not set.
+  distance: Float
+}
 
 type Mutation {
   """
@@ -2129,12 +2124,5 @@ scalar Vector_Embed_Model
   @fdc_example(value: "textembedding-gecko@001", description: "An older version of the textembedding-gecko model")
   @fdc_example(value: "text-embedding-004", description: "Another text embedding model")
 
-"""
-The `_Metadata` type is used to return metadata about a field in a response.
-"""
-type _Metadata {
-  # During vector similarity search, the distance between the query vector and
-  # this row's vector. In other cases, this field is not set.
-  distance: Float
-}
+# Intentionally left blank.
 

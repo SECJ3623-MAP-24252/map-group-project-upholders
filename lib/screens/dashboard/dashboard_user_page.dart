@@ -1,7 +1,4 @@
-// lib/screens/dashboard_user.dart
-
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -10,9 +7,14 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../model/mood_model.dart';
+import '../../services/audio/audio_service.dart';
+import '../../services/emotion/emotion_detection_service.dart';
 import '../../viewmodels/mood_viewmodel.dart';
+import '../../model/mood_model.dart';
 import '../../widgets/app_drawer.dart';
+import '../../widgets/mood_detail_bottom_sheet.dart';
+import '../../widgets/mood_add_bottom_sheet.dart';
+import '../../utils/emotion_to_emoji_mapper.dart';
 
 class DashboardUserPage extends StatelessWidget {
   const DashboardUserPage({super.key});
@@ -37,21 +39,26 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
   final TextEditingController _moodNoteController = TextEditingController();
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
+  late final EmotionDetectionService _emotionService;
+  late final AudioService _audioService;
 
-  final List<Map<String, dynamic>> _emojiOptions = [
-    {"emoji": "😀", "label": "Happy", "color": const Color(0xFF72BF69)},
-    {"emoji": "😊", "label": "Grateful", "color": const Color(0xFF6EC4E3)},
-    {"emoji": "😐", "label": "Neutral", "color": const Color(0xFFB7B77B)},
-    {"emoji": "😞", "label": "Sad", "color": const Color(0xFFFFB24A)},
-    {"emoji": "😡", "label": "Angry", "color": const Color(0xFFD64550)},
-  ];
+  bool _voiceRecording = false;
 
   @override
   void dispose() {
     _moodNoteController.dispose();
+    _audioService.dispose();
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _emotionService = EmotionDetectionService();
+    _audioService = AudioService();
+  }
+
+  // Photo feature (unchanged)
   Future<void> _openCamera(MoodViewModel vm) async {
     final picker = ImagePicker();
     final XFile? file = await picker.pickImage(
@@ -59,6 +66,12 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
       preferredCameraDevice: CameraDevice.front,
     );
     if (file == null) return;
+
+    final imageFile = File(file.path);
+
+    // Detect emotion with AI
+    final emotion = await _emotionService.detectEmotion(imageFile);
+    final moodOption = mapEmotionToEmojiOption(emotion);
 
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final newId =
@@ -72,10 +85,10 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
     await vm.addMood(
       MoodModel(
         id: newId,
-        emoji: "😀",
-        label: "Happy",
-        color: const Color(0xFF72BF69),
-        note: "Photo mood detected: Happy",
+        emoji: moodOption['emoji'],
+        label: moodOption['label'],
+        color: moodOption['color'],
+        note: "Photo mood detected: $emotion",
         date: DateTime.now(),
         imagePath: file.path,
       ),
@@ -97,7 +110,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                   fit: BoxFit.cover,
                 ),
                 const SizedBox(height: 8),
-                const Text('Dummy result: Happy 😊'),
+                Text('Detected: ${moodOption['label']} ${moodOption['emoji']}'),
               ],
             ),
             actions: [
@@ -113,280 +126,32 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
     );
   }
 
-  void _showDayDetailDialog(BuildContext ctx, MoodViewModel vm, DateTime day) {
-    final entries = vm.getMoodsForDay(day);
-
-    showModalBottomSheet(
-      context: ctx,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder:
-          (_) => DraggableScrollableSheet(
-            initialChildSize: 0.5,
-            minChildSize: 0.25,
-            maxChildSize: 0.9,
-            expand: false,
-            builder: (context, scrollController) {
-              return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    Text(
-                      "History for ${DateFormat.yMMMd().format(day)}",
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Divider(),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: scrollController,
-                        padding: const EdgeInsets.only(bottom: 24),
-                        itemCount: entries.length,
-                        itemBuilder: (_, i) {
-                          final e = entries[i];
-                          return ListTile(
-                            leading:
-                                e.imagePath != null
-                                    ? CircleAvatar(
-                                      backgroundImage: FileImage(
-                                        File(e.imagePath!),
-                                      ),
-                                    )
-                                    : CircleAvatar(
-                                      backgroundColor: e.color,
-                                      child: Text(e.emoji),
-                                    ),
-                            title: Text(e.label),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(DateFormat.jm().format(e.date)),
-                                if (e.note != null && e.note!.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Text(
-                                      e.note!,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () async {
-                                await vm.deleteMood(e.id);
-                                if (!ctx.mounted) return;
-                                Navigator.pop(ctx);
-                                _showDayDetailDialog(ctx, vm, day);
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const Divider(),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _showAddMoodDialog(ctx, vm, day);
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text("Add Mood"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFA7B77A),
-                          minimumSize: const Size.fromHeight(48),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-    );
+  // Voice feature
+  Future<void> _startVoiceRecord(MoodViewModel vm) async {
+    setState(() {
+      _voiceRecording = true;
+    });
+    await vm.startVoiceRecording();
   }
 
-  void _showAddMoodDialog(
-    BuildContext ctx,
-    MoodViewModel vm, [
-    DateTime? preset,
-  ]) {
-    _moodNoteController.clear();
-
-    showModalBottomSheet(
-      context: ctx,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+  Future<void> _stopVoiceRecord(MoodViewModel vm) async {
+    setState(() {
+      _voiceRecording = false;
+    });
+    final result = await vm.stopVoiceRecordingAndAddMood();
+    if (!mounted) return;
+    showDialog(
+      context: context,
       builder:
-          (_) => DraggableScrollableSheet(
-            initialChildSize: 0.4,
-            minChildSize: 0.25,
-            maxChildSize: 0.8,
-            expand: false,
-            builder: (context, scrollController) {
-              int? selected;
-              return StatefulBuilder(
-                builder: (c, setModalState) {
-                  return Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(24),
-                      ),
-                    ),
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      padding: EdgeInsets.only(
-                        left: 24,
-                        right: 24,
-                        top: 24,
-                        bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const Text(
-                            "How do you feel?",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 8,
-                            children: List.generate(_emojiOptions.length, (i) {
-                              final opt = _emojiOptions[i];
-                              final isSel = selected == i;
-                              return GestureDetector(
-                                onTap: () => setModalState(() => selected = i),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        isSel
-                                            ? (opt['color'] as Color)
-                                                .withOpacity(.3)
-                                            : Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(12),
-                                    border:
-                                        isSel
-                                            ? Border.all(
-                                              color: opt['color'] as Color,
-                                              width: 2,
-                                            )
-                                            : null,
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        opt['emoji'],
-                                        style: const TextStyle(fontSize: 28),
-                                      ),
-                                      Text(
-                                        opt['label'],
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _moodNoteController,
-                            decoration: InputDecoration(
-                              labelText: "Note (optional)",
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            maxLines: 2,
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed:
-                                selected == null
-                                    ? null
-                                    : () async {
-                                      final opt = _emojiOptions[selected!];
-                                      final now = preset ?? DateTime.now();
-                                      final uid =
-                                          FirebaseAuth
-                                              .instance
-                                              .currentUser!
-                                              .uid;
-                                      final newId =
-                                          FirebaseFirestore.instance
-                                              .collection('users')
-                                              .doc(uid)
-                                              .collection('moods')
-                                              .doc()
-                                              .id;
-
-                                      await vm.addMood(
-                                        MoodModel(
-                                          id: newId,
-                                          emoji: opt['emoji'],
-                                          label: opt['label'],
-                                          color: opt['color'],
-                                          note: _moodNoteController.text.trim(),
-                                          date: now,
-                                          imagePath: null,
-                                        ),
-                                      );
-                                      if (!ctx.mounted) return;
-                                      Navigator.pop(ctx);
-                                    },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFA7B77A),
-                              minimumSize: const Size.fromHeight(48),
-                            ),
-                            child: const Text("Add Mood"),
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
+          (_) => AlertDialog(
+            title: const Text('Voice Recorded'),
+            content: Text('Detected: ${result['label']} ${result['emoji']}'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
     );
   }
@@ -434,7 +199,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                         _selectedDay = sel;
                         _focusedDay = foc;
                       });
-                      _showDayDetailDialog(context, vm, sel);
+                      showMoodDetailBottomSheet(context, vm, sel);
                     },
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(
@@ -539,6 +304,18 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                               ),
                             ),
                           ),
+                        if (e.voicePath != null)
+                          Row(
+                            children: [
+                              Icon(Icons.mic, size: 16, color: Colors.blueGrey),
+                              TextButton(
+                                onPressed: () async {
+                                  await vm.playVoice(e.voicePath);
+                                },
+                                child: const Text('Play Voice'),
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                     trailing: IconButton(
@@ -559,7 +336,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                 FloatingActionButton(
                   heroTag: "fab_add",
                   backgroundColor: const Color(0xFFA7B77A),
-                  onPressed: () => _showAddMoodDialog(context, vm),
+                  onPressed: () => showMoodAddBottomSheet(context, vm),
                   child: const Icon(Icons.add, size: 28, color: Colors.white),
                 ),
                 const SizedBox(width: 16),
@@ -574,13 +351,19 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
                   ),
                 ),
                 const SizedBox(width: 16),
+                // VOICE FAB: Press to record, again to stop & save
                 FloatingActionButton(
                   heroTag: "fab_voice",
                   backgroundColor: Colors.blueAccent,
-                  onPressed: () {
-                    // TODO: wire up voice feature
-                  },
-                  child: const Icon(Icons.mic, size: 26, color: Colors.white),
+                  onPressed:
+                      _voiceRecording
+                          ? () => _stopVoiceRecord(vm)
+                          : () => _startVoiceRecord(vm),
+                  child: Icon(
+                    _voiceRecording ? Icons.stop : Icons.mic,
+                    size: 26,
+                    color: Colors.white,
+                  ),
                 ),
               ],
             ),
