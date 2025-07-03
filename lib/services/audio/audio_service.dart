@@ -19,7 +19,14 @@ class AudioService {
     final filePath =
         '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
-    await _recorder.start(const RecordConfig(), path: filePath);
+    await _recorder.start(
+      const RecordConfig(
+        encoder: AudioEncoder.aacLc, // .m4a format, best for mobile
+        bitRate: 128000,
+        sampleRate: 44100,
+      ),
+      path: filePath,
+    );
     _recordedFilePath = filePath;
   }
 
@@ -32,7 +39,16 @@ class AudioService {
     await _player.play(DeviceFileSource(path));
   }
 
-  void dispose() {
-    _player.dispose();
+  Future<void> pause() async {
+    await _player.pause();
+  }
+
+  Future<void> resume() async {
+    await _player.resume();
+  }
+
+  Future<void> dispose() async {
+    await _player.dispose();
+    await _recorder.dispose();
   }
 }
