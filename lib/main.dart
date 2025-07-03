@@ -1,35 +1,34 @@
 // lib/main.dart
 
 import 'dart:math' as math;
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+
+import './model/auth_models.dart';
 import './services/auth/auth_service.dart';
 import './services/sessions/session_service.dart';
 import './viewmodels/auth_viewmodel.dart';
-import './viewmodels/session_viewmodel.dart';
 import './viewmodels/mood_viewmodel.dart';
-
+import './viewmodels/session_viewmodel.dart';
+import 'firebase_options.dart';
+import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
-import 'screens/auth/forgot_password_screen.dart';
-import 'screens/dashboard/dashboard_user_page.dart';
 import 'screens/dashboard/dashboard_therapist_page.dart';
+import 'screens/dashboard/dashboard_user_page.dart';
 import 'screens/journal/journal_list_screen.dart';
 import 'screens/journal/journal_reminder_page.dart';
 import 'screens/journal/voice_journal_page.dart';
-import 'screens/mood_tracking/mood_scale_viewer_page.dart';
 import 'screens/mood_tracking/mood_chart_page.dart';
-
-import './model/auth_models.dart';
+import 'screens/mood_tracking/mood_scale_viewer_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await dotenv.load(fileName: ".env");
+  await dotenv.load();
   runApp(const MyApp());
 }
 

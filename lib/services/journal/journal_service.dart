@@ -1,9 +1,3 @@
-import 'dart:convert';
-
-// For a more robust unique ID, consider the 'uuid' package
-// import 'package:uuid/uuid.dart';
-import 'package:http/http.dart' as http;
-
 import '../../model/journal_model.dart';
 
 class JournalService {
@@ -74,27 +68,5 @@ class JournalService {
   Future<void> deleteJournalEntry(String entryId) async {
     await Future.delayed(const Duration(milliseconds: 200));
     _journalEntries.removeWhere((entry) => entry.id == entryId);
-  }
-
-  // Generate an AI summary for a journal entry using DeepAI API
-  Future<String?> generateSummary(String content) async {
-    final apiKey = 'dde4b379-74c3-4580-a082-5cff127d6531'; // DeepAI API Key
-    final url = Uri.parse('https://api.deepai.org/api/summarization');
-    final response = await http.post(
-      url,
-      headers: {
-        'Api-Key': apiKey,
-      },
-      body: {
-        'text': content,
-      },
-    );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['output']?.toString().trim();
-    } else {
-      // Handle error
-      return null;
-    }
   }
 }

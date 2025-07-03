@@ -1,20 +1,19 @@
 // lib/viewmodels/mood_viewmodel.dart
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../model/mood_model.dart';
-import '../services/mood/mood_service.dart';
-import '../services/audio/audio_service.dart';
-import '../services/emotion/emotion_detection_service.dart';
-import '../services/emotion/voice_emotion_detection_service.dart';
-import '../utils/emotion_to_emoji_mapper.dart';
 import 'dart:io';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
+import '../model/mood_model.dart';
+import '../services/audio/audio_service.dart';
+import '../services/emotion/deepai_service.dart';
+import '../services/mood/mood_service.dart';
+import '../utils/emotion_to_emoji_mapper.dart';
 
 class MoodViewModel extends ChangeNotifier {
   final MoodService _moodService = MoodService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final AudioService _audioService = AudioService();
-  final VoiceEmotionDetectionService _voiceEmotionService =
-      VoiceEmotionDetectionService();
 
   List<MoodModel> _moods = [];
   List<MoodModel> get moods => _moods;
@@ -24,6 +23,12 @@ class MoodViewModel extends ChangeNotifier {
   bool _isRecording = false;
   String? get voicePath => _voicePath;
   bool get isRecording => _isRecording;
+
+  // DEEPAI summary state
+  String? _deepaiMoodSummary;
+  String? _deepaiJournalSummary;
+  String? get deepaiMoodSummary => _deepaiMoodSummary;
+  String? get deepaiJournalSummary => _deepaiJournalSummary;
 
   MoodViewModel() {
     final user = _auth.currentUser;
@@ -50,20 +55,19 @@ class MoodViewModel extends ChangeNotifier {
   // PHOTO FEATURE
   Future<Map<String, dynamic>> addMoodFromPhoto(
     File photo,
-    EmotionDetectionService emotionService,
   ) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('Not logged in');
 
-    final emotion = await emotionService.detectEmotion(photo);
-    final mapped = mapEmotionToEmojiOption(emotion);
+    // AI emotion detection removed. Default to 'neutral' or prompt user for mood.
+    final mapped = mapEmotionToEmojiOption('neutral');
 
     final newMood = MoodModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       emoji: mapped['emoji'],
       label: mapped['label'],
       color: mapped['color'],
-      note: "Photo mood detected: $emotion",
+      note: "Photo mood (manual)",
       date: DateTime.now(),
       imagePath: photo.path,
     );
@@ -91,15 +95,8 @@ class MoodViewModel extends ChangeNotifier {
     _voicePath = path;
     if (_voicePath == null) throw Exception("Voice file not found!");
 
-    // Call your voice emotion API (or fallback to 'neutral')
-    String detectedEmotion = 'neutral';
-    try {
-      detectedEmotion = await _voiceEmotionService.detectEmotion(
-        File(_voicePath!),
-      );
-    } catch (_) {}
-
-    final mapped = mapEmotionToEmojiOption(detectedEmotion);
+    // AI voice emotion detection removed. Default to 'neutral' or prompt user for mood.
+    final mapped = mapEmotionToEmojiOption('neutral');
 
     final user = _auth.currentUser;
     if (user == null) throw Exception('Not logged in');
@@ -108,7 +105,7 @@ class MoodViewModel extends ChangeNotifier {
       emoji: mapped['emoji'],
       label: mapped['label'],
       color: mapped['color'],
-      note: "Voice mood detected: $detectedEmotion",
+      note: "Voice mood (manual)",
       date: DateTime.now(),
       voicePath: _voicePath,
     );
@@ -153,6 +150,18 @@ class MoodViewModel extends ChangeNotifier {
     }
     final most = counts.entries.reduce((a, b) => a.value >= b.value ? a : b);
     return moodsOfDay.firstWhere((m) => m.emoji == most.key);
+  }
+
+  // Fetch DEEPAI mood analysis (simulate)
+  Future<void> fetchDeepAIMoodSummary(String text) async {
+    _deepaiMoodSummary = await DeepAIService.analyzeMood(text);
+    notifyListeners();
+  }
+
+  // Fetch DEEPAI journal analysis (simulate)
+  Future<void> fetchDeepAIJournalSummary(String text) async {
+    _deepaiJournalSummary = await DeepAIService.analyzeJournal(text);
+    notifyListeners();
   }
 
   @override

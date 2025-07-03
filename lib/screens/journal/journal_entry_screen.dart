@@ -80,14 +80,7 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
   }
 
   Future<void> _generateSummary() async {
-    setState(() {
-      _isLoadingSummary = true;
-    });
-    final summary = await _journalService.generateSummary(_contentController.text);
-    setState(() {
-      _summary = summary;
-      _isLoadingSummary = false;
-    });
+    // This feature is disabled (AI summary removed)
   }
 
   @override
@@ -142,33 +135,6 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
                   }
                   return null;
                 },
-              ),
-              const SizedBox(height: 16.0),
-              if (_summary != null)
-                Card(
-                  color: Colors.blue[50],
-                  margin: const EdgeInsets.only(bottom: 16.0),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Text(
-                      'AI Summary:\n$_summary',
-                      style: const TextStyle(fontStyle: FontStyle.italic),
-                    ),
-                  ),
-                ),
-              ElevatedButton.icon(
-                icon: _isLoadingSummary
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.auto_awesome),
-                label: const Text('Generate AI Summary'),
-                onPressed: _isLoadingSummary ? null : _generateSummary,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12.0),
-                ),
               ),
               const SizedBox(height: 24.0),
               ElevatedButton.icon(

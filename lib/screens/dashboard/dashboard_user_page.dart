@@ -1,20 +1,20 @@
 import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../services/audio/audio_service.dart';
-import '../../services/emotion/emotion_detection_service.dart';
-import '../../viewmodels/mood_viewmodel.dart';
 import '../../model/mood_model.dart';
-import '../../widgets/app_drawer.dart';
-import '../../widgets/mood_detail_bottom_sheet.dart';
-import '../../widgets/mood_add_bottom_sheet.dart';
+import '../../services/audio/audio_service.dart';
 import '../../utils/emotion_to_emoji_mapper.dart';
+import '../../viewmodels/mood_viewmodel.dart';
+import '../../widgets/app_drawer.dart';
+import '../../widgets/mood_add_bottom_sheet.dart';
+import '../../widgets/mood_detail_bottom_sheet.dart';
 
 class DashboardUserPage extends StatelessWidget {
   const DashboardUserPage({super.key});
@@ -39,7 +39,6 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
   final TextEditingController _moodNoteController = TextEditingController();
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-  late final EmotionDetectionService _emotionService;
   late final AudioService _audioService;
 
   bool _voiceRecording = false;
@@ -54,7 +53,6 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
   @override
   void initState() {
     super.initState();
-    _emotionService = EmotionDetectionService();
     _audioService = AudioService();
   }
 
@@ -69,9 +67,8 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
 
     final imageFile = File(file.path);
 
-    // Detect emotion with AI
-    final emotion = await _emotionService.detectEmotion(imageFile);
-    final moodOption = mapEmotionToEmojiOption(emotion);
+    // AI emotion detection removed. Default to 'neutral' or prompt user for mood.
+    final moodOption = mapEmotionToEmojiOption('neutral');
 
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final newId =
@@ -88,7 +85,7 @@ class _DashboardUserPageViewState extends State<_DashboardUserPageView> {
         emoji: moodOption['emoji'],
         label: moodOption['label'],
         color: moodOption['color'],
-        note: "Photo mood detected: $emotion",
+        note: "Photo mood (manual)",
         date: DateTime.now(),
         imagePath: file.path,
       ),

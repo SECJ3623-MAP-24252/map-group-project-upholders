@@ -6,7 +6,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../services/journal/journal_service.dart'; // Reuse the summary service
 import '../../utils/mood_pdf_export.dart'; // <-- adjust if you put it elsewhere
 import '../../viewmodels/mood_viewmodel.dart';
 import '../../widgets/app_drawer.dart';
@@ -231,26 +230,73 @@ class _MoodChartRange extends StatelessWidget {
                   vertical: 28,
                   horizontal: 18,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                child: Column(
                   children: [
-                    _summaryItem(
-                      "Average",
-                      avgAll.toStringAsFixed(2),
-                      Icons.emoji_emotions,
-                      Colors.brown[600]!,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _summaryItem(
+                          "Average",
+                          avgAll.toStringAsFixed(2),
+                          Icons.emoji_emotions,
+                          Colors.brown[600]!,
+                        ),
+                        _summaryItem(
+                          "Highest",
+                          highAll.toStringAsFixed(2),
+                          Icons.trending_up,
+                          Colors.green[400]!,
+                        ),
+                        _summaryItem(
+                          "Lowest",
+                          lowAll.toStringAsFixed(2),
+                          Icons.trending_down,
+                          Colors.red[300]!,
+                        ),
+                      ],
                     ),
-                    _summaryItem(
-                      "Highest",
-                      highAll.toStringAsFixed(2),
-                      Icons.trending_up,
-                      Colors.green[400]!,
-                    ),
-                    _summaryItem(
-                      "Lowest",
-                      lowAll.toStringAsFixed(2),
-                      Icons.trending_down,
-                      Colors.red[300]!,
+                    const SizedBox(height: 18),
+                    // DEEPAI summary section
+                    if (vm.deepaiMoodSummary != null || vm.deepaiJournalSummary != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (vm.deepaiMoodSummary != null)
+                            Text(
+                              'DEEPAI Mood: \\${vm.deepaiMoodSummary}',
+                              style: const TextStyle(
+                                color: Colors.brown,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                          if (vm.deepaiJournalSummary != null)
+                            Text(
+                              'DEEPAI Journal: \\${vm.deepaiJournalSummary}',
+                              style: const TextStyle(
+                                color: Colors.brown,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                        ],
+                      ),
+                    // Button to simulate fetching DEEPAI summary
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () async {
+                            await vm.fetchDeepAIMoodSummary('Today I feel great!');
+                            await vm.fetchDeepAIJournalSummary('I accomplished a lot and felt positive.');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.brown[200],
+                            foregroundColor: Colors.brown[900],
+                          ),
+                          child: const Text('Simulate DEEPAI Summary'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -297,12 +343,6 @@ class _MoodChartRange extends StatelessWidget {
             _AnimatedMoodLineChart(spots: spots, labels: labels, range: range),
 
             const SizedBox(height: 30),
-
-            // --- Summarize AI section ---
-            _MoodAISummarySection(
-              moodLabels: all.map((m) => m.label).toList(),
-              moodDates: all.map((m) => m.date).toList(),
-            ),
           ],
         );
       },
@@ -527,106 +567,6 @@ class _AnimatedMoodLineChart extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _MoodAISummarySection extends StatefulWidget {
-  final List<String> moodLabels;
-  final List<DateTime> moodDates;
-  const _MoodAISummarySection({required this.moodLabels, required this.moodDates});
-
-  @override
-  State<_MoodAISummarySection> createState() => _MoodAISummarySectionState();
-}
-
-class _MoodAISummarySectionState extends State<_MoodAISummarySection> {
-  String? _summary;
-  bool _isLoading = false;
-  final JournalService _journalService = JournalService();
-
-  String _buildMoodText() {
-    if (widget.moodLabels.isEmpty) return "No mood data available.";
-    final buffer = StringBuffer();
-    for (int i = 0; i < widget.moodLabels.length; i++) {
-      buffer.writeln("${widget.moodDates[i].toLocal().toString().split(' ')[0]}: ${widget.moodLabels[i]}");
-    }
-    return buffer.toString();
-  }
-
-  Future<void> _generateSummary() async {
-    setState(() { _isLoading = true; });
-    final moodText = _buildMoodText();
-    final summary = await _journalService.generateSummary(moodText);
-    setState(() {
-      _summary = summary ?? "Failed to generate summary.";
-      _isLoading = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Summarize AI",
-            style: TextStyle(
-              color: Colors.blueGrey[900],
-              fontSize: 19,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 6),
-          if (_summary != null)
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.blueGrey[50],
-              ),
-              padding: const EdgeInsets.all(18),
-              child: Text(
-                _summary!,
-                style: const TextStyle(fontSize: 15, fontStyle: FontStyle.italic, color: Colors.black87),
-              ),
-            )
-          else
-            Container(
-              height: 44,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.blueGrey[50],
-              ),
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: Text(
-                "AI-generated mood summary coming soon...",
-                style: TextStyle(
-                  color: Colors.blueGrey[300],
-                  fontStyle: FontStyle.italic,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-          const SizedBox(height: 10),
-          ElevatedButton.icon(
-            icon: _isLoading
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.auto_awesome),
-            label: Text(_isLoading ? 'Generating...' : 'Generate AI Summary'),
-            onPressed: _isLoading ? null : _generateSummary,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueGrey[700],
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 18),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ],
       ),
     );
   }
