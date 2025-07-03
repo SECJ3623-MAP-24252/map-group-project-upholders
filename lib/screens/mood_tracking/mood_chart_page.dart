@@ -548,7 +548,6 @@ class _MoodAISummarySectionState extends State<_MoodAISummarySection> {
 
   String _buildMoodText() {
     if (widget.moodLabels.isEmpty) return "No mood data available.";
-    // Build a text summary of moods for the AI
     final buffer = StringBuffer();
     for (int i = 0; i < widget.moodLabels.length; i++) {
       buffer.writeln("${widget.moodDates[i].toLocal().toString().split(' ')[0]}: ${widget.moodLabels[i]}");

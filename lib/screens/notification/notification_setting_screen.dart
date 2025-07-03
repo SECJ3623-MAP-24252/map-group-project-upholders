@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+import '../../model/notification_model.dart';
 
 class NotificationSettingScreen extends StatefulWidget {
   const NotificationSettingScreen({super.key});
@@ -19,8 +24,9 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
   @override
   void initState() {
     super.initState();
+    tz.initializeTimeZones();
     _initializeNotifications();
-    // Load saved preferences here in a real app
+    _loadPreferences();
   }
 
   Future<void> _initializeNotifications() async {
@@ -67,8 +73,7 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
       'Take a moment to log your mood and reflect on your day.',
       _nextInstanceOfTime(_reminderTime),
       platformChannelSpecifics,
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
@@ -87,6 +92,36 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
     return scheduledDate;
+  }
+
+  Future<void> _savePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final notificationPrefs = NotificationPreferences(
+      dailyRemindersEnabled: _dailyRemindersEnabled,
+      insightNotificationsEnabled: _insightNotificationsEnabled,
+      moodTrendAlertsEnabled: _moodTrendAlertsEnabled,
+      reminderTime: _reminderTime,
+    );
+    final map = notificationPrefs.toMap();
+    map.forEach((key, value) {
+      if (value is bool) {
+        prefs.setBool(key, value);
+      } else if (value is int) {
+        prefs.setInt(key, value);
+      }
+    });
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _dailyRemindersEnabled = prefs.getBool('dailyRemindersEnabled') ?? true;
+      _insightNotificationsEnabled = prefs.getBool('insightNotificationsEnabled') ?? true;
+      _moodTrendAlertsEnabled = prefs.getBool('moodTrendAlertsEnabled') ?? false;
+      final hour = prefs.getInt('reminderHour') ?? 20;
+      final minute = prefs.getInt('reminderMinute') ?? 0;
+      _reminderTime = TimeOfDay(hour: hour, minute: minute);
+    });
   }
 
   @override
@@ -187,6 +222,7 @@ class _NotificationSettingScreenState extends State<NotificationSettingScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       // Save preferences and schedule notifications
+                      _savePreferences();
                       _scheduleDailyReminder();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

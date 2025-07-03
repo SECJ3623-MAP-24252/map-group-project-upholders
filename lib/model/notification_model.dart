@@ -71,7 +71,7 @@ class NotificationPreferences {
         '  dailyRemindersEnabled: $dailyRemindersEnabled,\n'
         '  insightNotificationsEnabled: $insightNotificationsEnabled,\n'
         '  moodTrendAlertsEnabled: $moodTrendAlertsEnabled,\n'
-        '  reminderTime: ${reminderTime.format(DateTime.now().toLocal())},\n'
+        '  reminderTime: ${reminderTime.hour.toString().padLeft(2, '0')}:${reminderTime.minute.toString().padLeft(2, '0')},\n'
         ')';
   }
 
