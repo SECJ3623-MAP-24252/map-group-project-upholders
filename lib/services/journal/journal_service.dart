@@ -76,28 +76,22 @@ class JournalService {
     _journalEntries.removeWhere((entry) => entry.id == entryId);
   }
 
-  // Generate an AI summary for a journal entry using OpenAI API
+  // Generate an AI summary for a journal entry using DeepAI API
   Future<String?> generateSummary(String content) async {
-    final apiKey = 'YOUR_OPENAI_API_KEY'; // Replace with your actual API key or load securely
-    final url = Uri.parse('https://api.openai.com/v1/chat/completions');
+    final apiKey = 'dde4b379-74c3-4580-a082-5cff127d6531'; // DeepAI API Key
+    final url = Uri.parse('https://api.deepai.org/api/summarization');
     final response = await http.post(
       url,
       headers: {
-        'Authorization': 'Bearer $apiKey',
-        'Content-Type': 'application/json',
+        'Api-Key': apiKey,
       },
-      body: jsonEncode({
-        "model": "gpt-3.5-turbo",
-        "messages": [
-          {"role": "system", "content": "Summarize the following journal entry in 2-3 sentences."},
-          {"role": "user", "content": content}
-        ],
-        "max_tokens": 100,
-      }),
+      body: {
+        'text': content,
+      },
     );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data['choices'][0]['message']['content'].trim();
+      return data['output']?.toString().trim();
     } else {
       // Handle error
       return null;
