@@ -1,6 +1,10 @@
-import '../../model/journal_model.dart';
+import 'dart:convert';
+
 // For a more robust unique ID, consider the 'uuid' package
 // import 'package:uuid/uuid.dart';
+import 'package:http/http.dart' as http;
+
+import '../../model/journal_model.dart';
 
 class JournalService {
   // In-memory store for journal entries.
@@ -70,5 +74,33 @@ class JournalService {
   Future<void> deleteJournalEntry(String entryId) async {
     await Future.delayed(const Duration(milliseconds: 200));
     _journalEntries.removeWhere((entry) => entry.id == entryId);
+  }
+
+  // Generate an AI summary for a journal entry using OpenAI API
+  Future<String?> generateSummary(String content) async {
+    final apiKey = 'YOUR_OPENAI_API_KEY'; // Replace with your actual API key or load securely
+    final url = Uri.parse('https://api.openai.com/v1/chat/completions');
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $apiKey',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        "model": "gpt-3.5-turbo",
+        "messages": [
+          {"role": "system", "content": "Summarize the following journal entry in 2-3 sentences."},
+          {"role": "user", "content": content}
+        ],
+        "max_tokens": 100,
+      }),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['choices'][0]['message']['content'].trim();
+    } else {
+      // Handle error
+      return null;
+    }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../model/journal_model.dart';
+import '../../services/journal/journal_service.dart';
 
 class JournalEntryScreen extends StatefulWidget {
   final JournalEntry? journalEntry; // Pass an entry to edit, or null for a new one
@@ -16,6 +17,9 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
   late TextEditingController _titleController;
   late TextEditingController _contentController;
   late DateTime _selectedDate;
+  String? _summary;
+  bool _isLoadingSummary = false;
+  final JournalService _journalService = JournalService();
 
   bool get _isEditing => widget.journalEntry != null;
 
@@ -27,11 +31,13 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
       _titleController = TextEditingController(text: widget.journalEntry!.title);
       _contentController = TextEditingController(text: widget.journalEntry!.content);
       _selectedDate = widget.journalEntry!.date;
+      _summary = widget.journalEntry!.summary;
     } else {
       // Creating a new entry
       _titleController = TextEditingController();
       _contentController = TextEditingController();
       _selectedDate = DateTime.now();
+      _summary = null;
     }
   }
 
@@ -50,6 +56,7 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
         title: _titleController.text,
         content: _contentController.text,
         date: _selectedDate,
+        summary: _summary, // Save the summary
       );
 
       // In a real app, you'd save this to a database or state management solution.
@@ -70,6 +77,17 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
         _selectedDate = pickedDate;
       });
     }
+  }
+
+  Future<void> _generateSummary() async {
+    setState(() {
+      _isLoadingSummary = true;
+    });
+    final summary = await _journalService.generateSummary(_contentController.text);
+    setState(() {
+      _summary = summary;
+      _isLoadingSummary = false;
+    });
   }
 
   @override
@@ -126,10 +144,31 @@ class _JournalEntryScreenState extends State<JournalEntryScreen> {
                 },
               ),
               const SizedBox(height: 16.0),
-              ListTile(
-                title: Text('Date: ${_selectedDate.toLocal().toString().split(' ')[0]}'), // Simple date formatting
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () => _pickDate(context),
+              if (_summary != null)
+                Card(
+                  color: Colors.blue[50],
+                  margin: const EdgeInsets.only(bottom: 16.0),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Text(
+                      'AI Summary:\n$_summary',
+                      style: const TextStyle(fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ),
+              ElevatedButton.icon(
+                icon: _isLoadingSummary
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_awesome),
+                label: const Text('Generate AI Summary'),
+                onPressed: _isLoadingSummary ? null : _generateSummary,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12.0),
+                ),
               ),
               const SizedBox(height: 24.0),
               ElevatedButton.icon(

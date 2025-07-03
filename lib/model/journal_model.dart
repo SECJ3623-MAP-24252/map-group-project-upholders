@@ -3,11 +3,13 @@ class JournalEntry {
   String title;
   String content;
   DateTime date;
+  String? summary; // Nullable summary field for AI-generated summary
 
   JournalEntry({
     this.id,
     required this.title,
     required this.content,
     required this.date,
+    this.summary,
   });
 }
